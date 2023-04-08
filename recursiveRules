@@ -9,32 +9,28 @@ exprAnd: exprAnd AND exprEq | exprEq
 exprAnd: exprEq exprAndPrime
 exprAndPrime: AND exprEq exprAndPrime | eps
 ------------------------------------------------------------------
-exprEq: exprEq ( EQUAL | NOTEQ ) exprRel | exprRel
+exprEq: exprEq (EQUAL | NOTEQ) exprRel | exprRel
 
 exprEq: exprRel exprEqPrime
-exprEqPrime: ( EQUAL | NOTEQ ) exprRel exprEqPrime | eps
+exprEqPrime: (EQUAL | NOTEQ) exprRel exprEqPrime | eps
 ------------------------------------------------------------------
-exprRel: exprRel ( LESS | LESSEQ | GREATER | GREATEREQ ) exprAdd | exprAdd
+exprRel: exprRel (LESS | LESSEQ | GREATER | GREATEREQ) exprAdd | exprAdd
 
 exprRel: exprAdd exprRelPrime
 exprRelPrime: (LESS | LESSEQ | GREATER | GREATEREQ) exprAdd exprRelPrime | eps
 ------------------------------------------------------------------
-exprAdd: exprAdd ( ADD | SUB ) exprMul | exprMul
+exprAdd: exprAdd (ADD | SUB) exprMul | exprMul
 
 exprAdd: exprMul exprAddPrime
-exprAddPrime: ( ADD | SUB ) exprMul exprAddPrime | eps
+exprAddPrime: (ADD | SUB) exprMul exprAddPrime | eps
 ------------------------------------------------------------------
-exprMul: exprMul ( MUL | DIV ) exprCast | exprCast
+exprMul: exprMul (MUL | DIV) exprCast | exprCast
 
 exprMul: exprCast exprMulPrime
-exprMulPrime: ( MUL | DIV ) exprCast exprMulPrime | eps
+exprMulPrime: (MUL | DIV) exprCast exprMulPrime | eps
 ------------------------------------------------------------------
 exprPostfix: exprPostfix LBRACKET expr RBRACKET | exprPostfix DOT ID | exprPrimary
 
 exprPostfix: exprPrimary exprPostfixPrime
 exprPostfixPrime: LBRACKET expr RBRACKET exprPostfixPrime | DOT ID exprPostfixPrime | eps
 ------------------------------------------------------------------
-
-type Tokens = List[token.Token]
-type ParsedTokens = Parser.Parsed[Tokens]
-type Rule = Tokens => ParsedTokens
