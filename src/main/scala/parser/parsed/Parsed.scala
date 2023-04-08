@@ -2,5 +2,8 @@ package parser.parsed
 
 import token.Token
 
-trait Parsed[T <: List[Token]](tokens: T):
+type Tokens = List[Token]
+type ParsingPair[T] = (Option[T], Parsed[Tokens])
+
+trait Parsed[T <: Tokens](tokens: T):
   def get: T = tokens

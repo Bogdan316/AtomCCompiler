@@ -1,5 +1,7 @@
 package token
 
+import parser.parsed.Tokens
+
 import scala.annotation.tailrec
 
 case class Token(tokenCode: TokenCode, line: Int):
@@ -51,7 +53,7 @@ object Token:
       case TokenCode.VOID => "void"
       case TokenCode.RETURN => "return"
 
-      case TokenCode.COMMA => ", "
+      case TokenCode.COMMA => ","
       case TokenCode.SEMICOLON => ";"
       case TokenCode.LPAR => "("
       case TokenCode.RPAR => ")"
@@ -61,27 +63,32 @@ object Token:
       case TokenCode.RACC => "}"
       case TokenCode.END => "EOF"
 
-      case TokenCode.ADD => " +"
-      case TokenCode.SUB => " -"
-      case TokenCode.MUL => " *"
-      case TokenCode.DIV => " /"
+      case TokenCode.ADD => "+"
+      case TokenCode.SUB => "-"
+      case TokenCode.MUL => "*"
+      case TokenCode.DIV => "/"
       case TokenCode.DOT => "."
-      case TokenCode.AND => " &&"
-      case TokenCode.OR => " ||"
-      case TokenCode.NOT => " ! "
-      case TokenCode.ASSIGN => " ="
-      case TokenCode.EQUAL => " =="
-      case TokenCode.NOTEQ => " !="
-      case TokenCode.LESS => " <"
-      case TokenCode.LESSEQ => " <="
-      case TokenCode.GREATER => " >"
-      case TokenCode.GREATEREQ => " >="
+      case TokenCode.AND => "&&"
+      case TokenCode.OR => "||"
+      case TokenCode.NOT => "! "
+      case TokenCode.ASSIGN => "="
+      case TokenCode.EQUAL => "=="
+      case TokenCode.NOTEQ => "!="
+      case TokenCode.LESS => "<"
+      case TokenCode.LESSEQ => "<="
+      case TokenCode.GREATER => ">"
+      case TokenCode.GREATEREQ => ">="
 
       case TokenCode.ID => "an identifier"
       case TokenCode.INT => "an integer"
       case TokenCode.DOUBLE => "a double"
       case TokenCode.CHAR => "a char"
       case TokenCode.STRING => "a string"
+
+  def stringify(token: Either[Tokens, TokenCode]): String =
+    token match
+      case Left(tokens) => stringify(tokens)
+      case Right(tokenCode) => stringify(tokenCode)
 
   def stringify(token: Token): String =
     token.tokenCode match
@@ -105,9 +112,9 @@ object Token:
 
         val stringTokens =
           if acc._2.line != token.line then
-            acc._1 + "\n" + indentation + stringify(token).trim
+            acc._1 + "\n" + indentation + stringify(token)
           else
-            acc._1 + stringify(token)
+            acc._1 + " " + stringify(token)
 
         (stringTokens, token, indentation)
       })._1.trim
