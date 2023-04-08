@@ -1,8 +1,8 @@
 package parser.ast
 
-import parser.ast.Aux.{arrayDecl, typeBase}
+import parser.ast.DefinitionUtils.{arraySize, typeBase}
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
-import parser.utils.{ExpectedButFoundError, SyntaxError}
+import parser.utils.exceptions.{ExpectedButFoundError, SyntaxError}
 import token.TokenCode.*
 import token.{Token, TokenWithValue}
 
@@ -43,8 +43,8 @@ object Expression:
   
   case class CastExpr
   (
-    typeBase: Aux.TypeBase,
-    arraySize: Option[Aux.ArraySize] = None,
+    typeBase: DefinitionUtils.TypeBase,
+    arraySize: Option[DefinitionUtils.ArraySize] = None,
     castedExpr: Expression
   ) extends Expression
 
@@ -61,7 +61,7 @@ object Expression:
 
           // should have expression after =
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of an assignment", t, Option(tokens.span(_ ne t)._1))
+            throw SyntaxError("the right hand side of an assignment", t, tokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => exprOr(tokens)
@@ -83,7 +83,7 @@ object Expression:
 
           // should have expression after ||
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of an or expression", t, Option(contextTokens.span(_ ne t)._1))
+            throw SyntaxError("the right hand side of an or expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => (Some(prevExpr), IsParsed(tokens))
@@ -105,7 +105,7 @@ object Expression:
 
           // should have expression after &&
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of an and expression", t, Option(contextTokens.span(_ ne t)._1))
+            throw SyntaxError("the right hand side of an and expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => (Some(prevExpr), IsParsed(tokens))
@@ -127,7 +127,7 @@ object Expression:
 
           // should have expression after equality operators
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of an equality expression", t, Option(contextTokens.span(_ ne t)._1))
+            throw SyntaxError("the right hand side of an equality expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => (Some(prevExpr), IsParsed(tokens))
@@ -149,7 +149,7 @@ object Expression:
 
           // should have expression after comparison operator
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of a comparison expression", t, Option(contextTokens.span(_ ne t)._1))
+            throw SyntaxError("the right hand side of a comparison expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => (Some(prevExpr), IsParsed(tokens))
@@ -171,7 +171,7 @@ object Expression:
 
           // should have expression after operator
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of an arithmetic expression", t, Option(contextTokens.span(_ ne t)._1))
+            throw SyntaxError("the right hand side of an arithmetic expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => (Some(prevExpr), IsParsed(tokens))
@@ -193,7 +193,7 @@ object Expression:
 
           // should have expression after operator
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of an arithmetic expression", t, Option(contextTokens.span(_ ne t)._1))
+            throw SyntaxError("the right hand side of an arithmetic expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => (Some(prevExpr), IsParsed(tokens))
@@ -205,7 +205,7 @@ object Expression:
       case token.Token(LPAR, _) :: tail =>
         typeBase(tail) match
           case (Some(baseType), IsParsed(remainingTokens)) =>
-            arrayDecl(remainingTokens, tokens) match
+            arraySize(remainingTokens, tokens) match
               case (arrDecl, remainingTokens) =>
                 remainingTokens.get match
                   case Token(RPAR, _) :: tail =>
@@ -216,7 +216,7 @@ object Expression:
 
                   case t :: _ =>
                     // should have the matching )
-                    throw ExpectedButFoundError(RPAR, t, Option(tokens.span(_ ne t)._1))
+                    throw ExpectedButFoundError(RPAR, t, tokens)
 
                   case _ => (None, NotParsed(tokens))
           case _ => exprUnary(tokens)
@@ -230,7 +230,7 @@ object Expression:
 
           // should have expression after operator
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("an unary expression", t, Option(tokens.span(_ ne t)._1))
+            throw SyntaxError("an unary expression", t, tokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => exprPostfix(tokens)
@@ -253,11 +253,11 @@ object Expression:
 
           // should have the matching ]
           case (Some(_), IsParsed(t :: _)) =>
-            throw ExpectedButFoundError(RBRACKET, t, Option(contextTokens.span(_ ne t)._1))
+            throw ExpectedButFoundError(RBRACKET, t, contextTokens)
 
           // should have expression between []
           case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("an expression", t, Option(contextTokens.span(_ ne t)._1))
+            throw SyntaxError("an expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
 
@@ -266,7 +266,7 @@ object Expression:
 
       // should have id after .
       case Token(DOT, _) :: t :: _ =>
-        throw ExpectedButFoundError(ID, t, Option(contextTokens.span(_ ne t)._1))
+        throw ExpectedButFoundError(ID, t, contextTokens)
 
       case _ => (Some(prevExpr), IsParsed(tokens))
 
@@ -282,7 +282,7 @@ object Expression:
 
         // should have , between function arguments
         case t :: _ if t.tokenCode != RPAR && t.tokenCode != LACC =>
-          throw ExpectedButFoundError(COMMA, t, Option(tokens.span(_ ne t)._1))
+          throw ExpectedButFoundError(COMMA, t, tokens)
 
         case _ => (Some(expressions), IsParsed(tokens))
 
@@ -294,10 +294,10 @@ object Expression:
             exprHelper(remainingTokens, List(exp)) match
               case (Some(exprs), IsParsed(Token(RPAR, _) :: remainingTokens)) =>
                 (Option(FunctionCallExpr(funName, exprs *)), IsParsed(remainingTokens))
-    
+
               // should have ) at the end of function call
               case (Some(_), IsParsed(t :: _)) =>
-                throw ExpectedButFoundError(RPAR, t, Option(tokens.span(_ ne t)._1))
+                throw ExpectedButFoundError(RPAR, t, tokens)
 
               case _ => (None, NotParsed(tokens))
           case _ => (None, NotParsed(tokens))
@@ -307,17 +307,16 @@ object Expression:
 
       // INT | DOUBLE | CHAR | STRING
       case (t@TokenWithValue(INT | DOUBLE | CHAR | STRING, _, _)) :: tail => (Some(LiteralExpr(t)), IsParsed(tail))
-  
+
       // LPAR expr RPAR
       case Token(LPAR, _) :: tail =>
         expr(tail) match
           case (exp, IsParsed(Token(RPAR, _) :: tail)) =>(exp, IsParsed(tail))
-          
+
           // should have matching )
-          case (Some(_), IsParsed(t :: _)) => 
-            throw ExpectedButFoundError(RPAR, t, Option(tokens.span(_ ne t)._1))
+          case (Some(_), IsParsed(t :: _)) =>
+            throw ExpectedButFoundError(RPAR, t, tokens)
 
           case _ => (None, NotParsed(tokens))
 
       case _ => (None, NotParsed(tokens))
-      

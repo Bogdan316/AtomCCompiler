@@ -13,7 +13,7 @@ int len(char s[], int asd[], char c){
 	int i;
 	i=0;
 	while(s[i])i=(double)i+1;
-	return i;
+	return;
 	}
 
 void main(){
