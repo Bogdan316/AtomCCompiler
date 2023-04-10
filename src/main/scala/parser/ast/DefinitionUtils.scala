@@ -1,7 +1,7 @@
 package parser.ast
 
+import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
-import parser.utils.exceptions.ExpectedButFoundError
 import token.TokenCode.{ID, INT, LBRACKET, RBRACKET, STRUCT, TYPE_CHAR, TYPE_DOUBLE, TYPE_INT}
 import token.{Token, TokenWithValue}
 
@@ -9,67 +9,63 @@ trait DefinitionUtils extends AstNode
 
 object DefinitionUtils:
 
-  case class TypeBase
+  case class TypeBaseNode
   (
     baseType: Token,
     structId: Option[Token] = None
   ) extends DefinitionUtils
 
-  case class ArraySize
+  case class ArraySizeNode
   (
-    size: Token = TokenWithValue(ID, -1, 0)
+    size: Option[Int] = None
   ) extends DefinitionUtils
 
-  case class FunctionParam
+  case class FunctionParamNode
   (
-    typeBase: TypeBase,
+    typeBase: TypeBaseNode,
     id: Token,
-    arraySize: Option[ArraySize] = None
+    arraySize: Option[ArraySizeNode] = None
   ) extends DefinitionUtils
 
-  def typeBase(tokens: Tokens): ParsingPair[TypeBase] =
+  def typeBase(tokens: Tokens): ParsingPair[TypeBaseNode] =
     // TYPE_INT | TYPE_DOUBLE | TYPE_CHAR | STRUCT ID
     tokens match
       case (definedType@Token(TYPE_INT | TYPE_DOUBLE | TYPE_CHAR, _)) :: tail =>
-        (Option(TypeBase(definedType)), IsParsed(tail))
+        (Option(TypeBaseNode(definedType)), IsParsed(tail))
 
       case (structType@Token(STRUCT, _)) :: (structId@Token(ID, _)) :: tail =>
-        (Option(TypeBase(structType, Option(structId))), IsParsed(tail))
+        (Option(TypeBaseNode(structType, Option(structId))), IsParsed(tail))
 
       // struct keyword should be followed by an id
-      case Token(STRUCT, _) :: t :: _ =>
-        throw ExpectedButFoundError(ID, t, tokens)
+      case Token(STRUCT, _) :: t :: _ => throw SyntaxError(ID, t, tokens)
 
       case _ => (None, NotParsed(tokens))
 
-  def arraySize(tokens: Tokens, contextTokens: Tokens): ParsingPair[ArraySize] =
+  def arraySize(tokens: Tokens, contextTokens: Tokens): ParsingPair[ArraySizeNode] =
     // LBRACKET INT? RBRACKET
     tokens match
-      case Token(LBRACKET, _) :: Token(RBRACKET, _) :: tail => (Option(ArraySize()), IsParsed(tail))
+      case Token(LBRACKET, _) :: Token(RBRACKET, _) :: tail => (Option(ArraySizeNode(Option(0))), IsParsed(tail))
 
-      case Token(LBRACKET, _) :: (arrSize@Token(INT, _)) :: Token(RBRACKET, _) :: tail =>
-        (Option(ArraySize(arrSize)), IsParsed(tail))
+      case Token(LBRACKET, _) :: TokenWithValue(INT, _, value: Int) :: Token(RBRACKET, _) :: tail =>
+        (Option(ArraySizeNode(Option(value))), IsParsed(tail))
 
       // should have integer between []
-      case Token(LBRACKET, _) :: t :: Token(RBRACKET, _) :: _ =>
-        throw ExpectedButFoundError(INT, t, contextTokens)
+      case Token(LBRACKET, _) :: t :: Token(RBRACKET, _) :: _ => throw SyntaxError(INT, t, contextTokens)
 
       // should have matching ]
-      case Token(LBRACKET, _) :: t :: _ =>
-        throw ExpectedButFoundError(RBRACKET, t, contextTokens)
+      case Token(LBRACKET, _) :: t :: _ => throw SyntaxError(RBRACKET, t, contextTokens)
 
       case _ => (None, NotParsed(tokens))
 
-  def functionParam(tokens: Tokens, contextTokens: Tokens): ParsingPair[FunctionParam] =
+  def functionParam(tokens: Tokens, contextTokens: Tokens): ParsingPair[FunctionParamNode] =
     // typeBase ID arrayDecl?
     typeBase(tokens) match
       case (Some(paramType), IsParsed((paramId@Token(ID, _)) :: remainingTokens)) =>
         arraySize(remainingTokens, contextTokens) match
           case (arraySize, remainingTokens) =>
-            (Option(FunctionParam(paramType, paramId, arraySize)), IsParsed(remainingTokens.get))
+            (Option(FunctionParamNode(paramType, paramId, arraySize)), IsParsed(remainingTokens.get))
 
       // should have name after type
-      case (Some(_), IsParsed(t :: _)) =>
-        throw ExpectedButFoundError(ID, t, contextTokens)
+      case (Some(_), IsParsed(t :: _)) => throw SyntaxError(ID, t, contextTokens)
 
       case _ => (None, NotParsed(tokens))

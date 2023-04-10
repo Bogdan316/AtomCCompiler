@@ -1,6 +1,7 @@
 package lexer
 
-import token.{Token, NoValueToken, TokenCode}
+import parser.parsed.Tokens
+import token.{NoValueToken, Token, TokenCode}
 import token.helpers.Tokenizers
 
 import java.io.*
@@ -19,7 +20,7 @@ case class Lexer(sourceFile: File):
       case t if Token.isOperator(t) => Tokenizers.tokenizeOperator(line, t, nextChar)
       case t => Tokenizers.tokenizeConstant(line, t, nextChar)
 
-  private def tokenizeLine(idx: Int, line: String): List[Token] =
+  private def tokenizeLine(idx: Int, line: String): Tokens =
     // add two empty characters at the end of the string as delimiting values
     val tokenizeResult = (line :+ Char.MinValue :+ Char.MinValue)
       // list with the tokens found so far, the current token, the next character from the string (starts as white space and gets trimmed later)
@@ -36,7 +37,7 @@ case class Lexer(sourceFile: File):
       throw RuntimeException(s"Unknown token '${tokenizeResult._2}' found at line $idx.")
     else tokenizeResult._1
 
-  def tokenizeFile: List[Token] =
+  def tokenizeFile: Tokens =
     val bufferedSource = Source.fromFile(sourceFile)
     val tokens = bufferedSource
       .getLines

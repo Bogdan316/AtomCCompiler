@@ -1,8 +1,8 @@
 package parser.ast
 
-import parser.ast.Statement.{CompoundStm, compoundStm}
+import parser.ast.Statement.{CompoundStmNode, compoundStm}
+import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
-import parser.utils.exceptions.ExpectedButFoundError
 import token.Token
 import token.TokenCode.*
 
@@ -12,28 +12,28 @@ trait Definition extends Statement
 
 object Definition:
 
-  case class StructDef
+  case class StructDefNode
   (
     id: Token,
-    variableDefinitions: VariableDef*
+    variableDefinitions: VariableDefNode*
   ) extends Definition
 
-  case class VariableDef
+  case class VariableDefNode
   (
-    typeBase: DefinitionUtils.TypeBase,
+    typeBase: DefinitionUtils.TypeBaseNode,
     id: Token,
-    arraySize: Option[DefinitionUtils.ArraySize] = None
+    arraySize: Option[DefinitionUtils.ArraySizeNode] = None
   ) extends Definition
 
-  case class FunctionDef
+  case class FunctionDefNode
   (
-    returnType: DefinitionUtils.TypeBase,
+    returnType: DefinitionUtils.TypeBaseNode,
     id: Token,
-    compoundStm: CompoundStm,
-    functionParams: DefinitionUtils.FunctionParam *
+    compoundStm: CompoundStmNode,
+    functionParams: DefinitionUtils.FunctionParamNode *
   ) extends Definition
 
-  def variableDef(tokens: Tokens): ParsingPair[VariableDef] =
+  def variableDef(tokens: Tokens): ParsingPair[VariableDefNode] =
     // typeBase ID arrayDecl? SEMICOLON
     DefinitionUtils.typeBase(tokens) match
       case (Some(varType), IsParsed((varId@Token(ID, _)) :: remainingTokens)) =>
@@ -42,24 +42,22 @@ object Definition:
           case (arraySize, remainingTokens) =>
             remainingTokens.get match
               case Token(SEMICOLON, _) :: tail =>
-                (Some(VariableDef(varType, varId, arraySize)), IsParsed(tail))
+                (Some(VariableDefNode(varType, varId, arraySize)), IsParsed(tail))
 
               // should have ; at the end of definition
-              case t :: _ if t.tokenCode != LBRACKET =>
-                throw ExpectedButFoundError(SEMICOLON, t, tokens)
+              case t :: _ if t.tokenCode != LBRACKET => throw SyntaxError(SEMICOLON, t, tokens)
 
               case _ => (None, NotParsed(tokens))
 
       // should have id after type
-      case (Some(_), IsParsed(t :: _)) if t.tokenCode != LACC =>
-        throw ExpectedButFoundError(ID, t, tokens)
+      case (Some(_), IsParsed(t :: _)) if t.tokenCode != LACC => throw SyntaxError(ID, t, tokens)
 
       case _ => (None, NotParsed(tokens))
 
-  def structDef(tokens: Tokens): ParsingPair[StructDef] =
+  def structDef(tokens: Tokens): ParsingPair[StructDefNode] =
     // STRUCT ID LACC varDef* RACC SEMICOLON
     @tailrec
-    def structDefHelper(crtTokens: Tokens, definitions: List[VariableDef]): ParsingPair[List[VariableDef]] =
+    def structDefHelper(crtTokens: Tokens, definitions: List[VariableDefNode]): ParsingPair[List[VariableDefNode]] =
       // varDef*
       variableDef(crtTokens) match
         case (Some(definition), IsParsed(remainingTokens)) => structDefHelper(remainingTokens, definitions :+ definition)
@@ -70,32 +68,28 @@ object Definition:
 
         structDefHelper(remainingTokens, List()) match
           case (Some(definitions), IsParsed(Token(RACC, _) :: Token(SEMICOLON, _) :: remainingTokens)) =>
-            (Option(StructDef(structId, definitions *)), IsParsed(remainingTokens))
+            (Option(StructDefNode(structId, definitions *)), IsParsed(remainingTokens))
 
           // should have ; at end of struct definition
-          case (Some(_), IsParsed(Token(RACC, _) :: t :: _)) =>
-            throw ExpectedButFoundError(SEMICOLON, t, tokens)
+          case (Some(_), IsParsed(Token(RACC, _) :: t :: _)) => throw SyntaxError(SEMICOLON, t, tokens)
 
           // should have matching }
-          case (Some(_), IsParsed(t :: _)) =>
-            throw ExpectedButFoundError(RACC, t, tokens)
+          case (Some(_), IsParsed(t :: _)) => throw SyntaxError(RACC, t, tokens)
 
           case _ => (None, NotParsed(tokens))
 
       // should have { after struct name
-      case Token(STRUCT, _) :: Token(ID, _) :: t :: _ =>
-        throw ExpectedButFoundError(LACC, t, tokens)
+      case Token(STRUCT, _) :: Token(ID, _) :: t :: _ => throw SyntaxError(LACC, t, tokens)
 
       // should have name after struct keyword
-      case Token(STRUCT, _) :: t :: _ =>
-        throw ExpectedButFoundError(ID, t, tokens)
+      case Token(STRUCT, _) :: t :: _ => throw SyntaxError(ID, t, tokens)
 
       case _ => (None, NotParsed(tokens))
 
-  private def functionParams(tokens: Tokens, contextTokens: Tokens): ParsingPair[List[DefinitionUtils.FunctionParam]] =
+  private def functionParams(tokens: Tokens, contextTokens: Tokens): ParsingPair[List[DefinitionUtils.FunctionParamNode]] =
     // (fnParam (COMMA fnParam)*)?
     @tailrec
-    def functionParamsHelper(crtTokens: Tokens, params: List[DefinitionUtils.FunctionParam]): ParsingPair[List[DefinitionUtils.FunctionParam]] =
+    def functionParamsHelper(crtTokens: Tokens, params: List[DefinitionUtils.FunctionParamNode]): ParsingPair[List[DefinitionUtils.FunctionParamNode]] =
       // (COMMA fnParam)*
       crtTokens match
         case Token(COMMA, _) :: remainingTokens =>
@@ -104,8 +98,7 @@ object Definition:
             case _ => (Some(List()), IsParsed(crtTokens))
 
         // should have , between parameters
-        case t :: _ if t.tokenCode != RPAR && t.tokenCode != LACC =>
-          throw ExpectedButFoundError(COMMA, t, contextTokens)
+        case t :: _ if t.tokenCode != RPAR && t.tokenCode != LACC => throw SyntaxError(COMMA, t, contextTokens)
 
         case _ => (Some(params), IsParsed(crtTokens))
 
@@ -117,16 +110,15 @@ object Definition:
           case _ => (Some(List(param)), IsParsed(remainingTokens))
       case _ => (Some(List()), IsParsed(tokens))
 
-  def functionDef(tokens: Tokens): ParsingPair[FunctionDef] =
+  def functionDef(tokens: Tokens): ParsingPair[FunctionDefNode] =
     // (typeBase | VOID) ID LPAR (fnParam(COMMA fnParam) *) ? RPAR stmCompound
     val (returnType, functionName, remainingTokens) =
       tokens match
         case (retType@Token(VOID, _)) :: (fnName@Token(ID, _)) :: remainingTokens =>
-          (Some(DefinitionUtils.TypeBase(retType)), Some(fnName), IsParsed(remainingTokens))
+          (Some(DefinitionUtils.TypeBaseNode(retType)), Some(fnName), IsParsed(remainingTokens))
 
         // should have name after type
-        case Token(VOID, _) :: t :: _ =>
-          throw ExpectedButFoundError(ID, t, tokens)
+        case Token(VOID, _) :: t :: _ => throw SyntaxError(ID, t, tokens)
 
         case _ =>
           DefinitionUtils.typeBase(tokens) match
@@ -134,8 +126,7 @@ object Definition:
               (Some(baseType), Some(fnName), IsParsed(remainingTokens))
 
             // should have name after type
-            case (Some(_), IsParsed(t :: _)) if t.tokenCode != LACC =>
-              throw ExpectedButFoundError(ID, t, tokens)
+            case (Some(_), IsParsed(t :: _)) if t.tokenCode != LACC => throw SyntaxError(ID, t, tokens)
 
             case _ => (None, None, NotParsed(tokens))
 
@@ -147,17 +138,15 @@ object Definition:
 
             compoundStm(remainingTokens) match
               case (Some(statement), remainingTokens) =>
-                (Option(FunctionDef(returnType.get, functionName.get, statement, params *)), remainingTokens)
+                (Option(FunctionDefNode(returnType.get, functionName.get, statement, params *)), remainingTokens)
               case _ => (None, NotParsed(tokens))
 
           // should have the ) after parameters list
-          case (Some(_), IsParsed(t :: _)) =>
-            throw ExpectedButFoundError(RPAR, t, tokens)
+          case (Some(_), IsParsed(t :: _)) => throw SyntaxError(RPAR, t, tokens)
 
           case _ => (None, NotParsed(tokens))
 
       // should have ( after function name
-      case IsParsed(t :: Token(LPAR, _) :: _) =>
-        throw ExpectedButFoundError(ID, t, tokens)
+      case IsParsed(t :: Token(LPAR, _) :: _) => throw SyntaxError(ID, t, tokens)
 
       case _ => (None, NotParsed(tokens))

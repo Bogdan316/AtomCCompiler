@@ -1,8 +1,8 @@
 package parser.ast
 
 import parser.ast.DefinitionUtils.{arraySize, typeBase}
+import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
-import parser.utils.exceptions.{ExpectedButFoundError, SyntaxError}
 import token.TokenCode.*
 import token.{Token, TokenWithValue}
 
@@ -12,39 +12,39 @@ trait Expression extends AstNode
 
 object Expression:
   
-  case class BinaryExpr
+  case class BinaryExprNode
   (
     left: Expression,
     operator: Token,
     right: Expression
   ) extends Expression
   
-  case class UnaryExpr
+  case class UnaryExprNode
   (
     operator: Token,
     right: Expression
   ) extends Expression
   
-  case class FunctionCallExpr
+  case class FunctionCallExprNode
   (
     funName: Token,
     expressions: Expression *
   ) extends Expression
   
-  case class LiteralExpr[T]
+  case class LiteralExprNode[T]
   (
     literal: TokenWithValue[T]
   ) extends Expression
   
-  case class VariableExpr[T]
+  case class VariableExprNode[T]
   (
     variable: TokenWithValue[T]
   ) extends  Expression
   
-  case class CastExpr
+  case class CastExprNode
   (
-    typeBase: DefinitionUtils.TypeBase,
-    arraySize: Option[DefinitionUtils.ArraySize] = None,
+    typeBase: DefinitionUtils.TypeBaseNode,
+    arraySize: Option[DefinitionUtils.ArraySizeNode] = None,
     castedExpr: Expression
   ) extends Expression
 
@@ -57,11 +57,10 @@ object Expression:
       case (Some(unary), IsParsed((op@Token(ASSIGN, _)) :: tail)) =>
         exprAssign(tail) match
           case (Some(assign), remainingTokens@IsParsed(_)) =>
-            (Some(BinaryExpr(unary, op, assign)), remainingTokens)
+            (Some(BinaryExprNode(unary, op, assign)), remainingTokens)
 
           // should have expression after =
-          case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("the right hand side of an assignment", t, tokens)
+          case (None, NotParsed(t :: _)) => throw SyntaxError("the right hand side of an assignment", t, tokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => exprOr(tokens)
@@ -79,10 +78,10 @@ object Expression:
       case (op@token.Token(OR, _)) :: tail =>
         exprAnd(tail) match
           case (Some(and), IsParsed(remainingTokens)) =>
-            exprOrPrime(remainingTokens, BinaryExpr(prevExpr, op, and), contextTokens)
+            exprOrPrime(remainingTokens, BinaryExprNode(prevExpr, op, and), contextTokens)
 
           // should have expression after ||
-          case (None, NotParsed(t :: _)) =>
+          case (None, NotParsed(t :: _)) => 
             throw SyntaxError("the right hand side of an or expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
@@ -101,10 +100,10 @@ object Expression:
       case (op@token.Token(AND, _)) :: tail =>
         exprEq(tail) match
           case (Some(eq), IsParsed(remainingTokens)) =>
-            exprAndPrime(remainingTokens, BinaryExpr(prevExpr, op, eq), tokens)
+            exprAndPrime(remainingTokens, BinaryExprNode(prevExpr, op, eq), tokens)
 
           // should have expression after &&
-          case (None, NotParsed(t :: _)) =>
+          case (None, NotParsed(t :: _)) => 
             throw SyntaxError("the right hand side of an and expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
@@ -123,7 +122,7 @@ object Expression:
       case (op@Token(EQUAL | NOTEQ, _)) :: tail =>
         exprRel(tail) match
           case (Some(rel), IsParsed(remainingTokens)) =>
-            exprEqPrime(remainingTokens, BinaryExpr(prevExpr, op, rel), contextTokens)
+            exprEqPrime(remainingTokens, BinaryExprNode(prevExpr, op, rel), contextTokens)
 
           // should have expression after equality operators
           case (None, NotParsed(t :: _)) =>
@@ -145,10 +144,10 @@ object Expression:
       case (op@Token(LESS | LESSEQ | GREATER | GREATEREQ, _)) :: tail =>
         exprAdd(tail) match
           case (Some(add), IsParsed(remainingTokens)) =>
-            exprRelPrime(remainingTokens, BinaryExpr(prevExpr, op, add), contextTokens)
+            exprRelPrime(remainingTokens, BinaryExprNode(prevExpr, op, add), contextTokens)
 
           // should have expression after comparison operator
-          case (None, NotParsed(t :: _)) =>
+          case (None, NotParsed(t :: _)) => 
             throw SyntaxError("the right hand side of a comparison expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
@@ -167,10 +166,10 @@ object Expression:
       case (op@Token(ADD | SUB, _)) :: tail =>
         exprMul(tail) match
           case (Some(mul), IsParsed(remainingTokens)) =>
-            exprAddPrime(remainingTokens, BinaryExpr(prevExpr, op, mul), contextTokens)
+            exprAddPrime(remainingTokens, BinaryExprNode(prevExpr, op, mul), contextTokens)
 
           // should have expression after operator
-          case (None, NotParsed(t :: _)) =>
+          case (None, NotParsed(t :: _)) => 
             throw SyntaxError("the right hand side of an arithmetic expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
@@ -189,10 +188,10 @@ object Expression:
       case (op@Token(MUL | DIV, _)) :: tail =>
         exprCast(tail) match
           case (Some(cast), IsParsed(remainingTokens)) =>
-            exprMulPrime(remainingTokens, BinaryExpr(prevExpr, op, cast), contextTokens)
+            exprMulPrime(remainingTokens, BinaryExprNode(prevExpr, op, cast), contextTokens)
 
           // should have expression after operator
-          case (None, NotParsed(t :: _)) =>
+          case (None, NotParsed(t :: _)) => 
             throw SyntaxError("the right hand side of an arithmetic expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
@@ -211,12 +210,11 @@ object Expression:
                   case Token(RPAR, _) :: tail =>
                     exprCast(tail) match
                       case (Some(castExpr), remainingTokens) =>
-                        (Some(CastExpr(baseType, arrDecl, castExpr)), remainingTokens)
+                        (Some(CastExprNode(baseType, arrDecl, castExpr)), remainingTokens)
                       case _ => (None, NotParsed(tokens))
-
-                  case t :: _ =>
-                    // should have the matching )
-                    throw ExpectedButFoundError(RPAR, t, tokens)
+                      
+                  // should have the matching )
+                  case t :: _ => throw SyntaxError(RPAR, t, tokens)
 
                   case _ => (None, NotParsed(tokens))
           case _ => exprUnary(tokens)
@@ -226,11 +224,10 @@ object Expression:
     tokens match
       case (op@Token(SUB | NOT, _)) :: tail =>
         exprUnary(tail) match
-          case (Some(expUnary), remainingTokens) => (Some(UnaryExpr(op, expUnary)), remainingTokens)
+          case (Some(expUnary), remainingTokens) => (Some(UnaryExprNode(op, expUnary)), remainingTokens)
 
           // should have expression after operator
-          case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("an unary expression", t, tokens)
+          case (None, NotParsed(t :: _)) => throw SyntaxError("an unary expression", t, tokens)
 
           case _ => (None, NotParsed(tokens))
       case _ => exprPostfix(tokens)
@@ -249,24 +246,21 @@ object Expression:
       case token.Token(LBRACKET, _) :: tail =>
         expr(tail) match
           case (Some(exp), IsParsed((op@Token(RBRACKET, _)) :: tail)) =>
-            exprPostfixPrime(tail, BinaryExpr(prevExpr, op, exp), contextTokens)
+            exprPostfixPrime(tail, BinaryExprNode(prevExpr, op, exp), contextTokens)
 
           // should have the matching ]
-          case (Some(_), IsParsed(t :: _)) =>
-            throw ExpectedButFoundError(RBRACKET, t, contextTokens)
+          case (Some(_), IsParsed(t :: _)) => throw SyntaxError(RBRACKET, t, contextTokens)
 
           // should have expression between []
-          case (None, NotParsed(t :: _)) =>
-            throw SyntaxError("an expression", t, contextTokens)
+          case (None, NotParsed(t :: _)) => throw SyntaxError("an expression", t, contextTokens)
 
           case _ => (None, NotParsed(tokens))
 
       case (op@Token(DOT, _)) :: (id@TokenWithValue(ID, _, _)) :: tail =>
-        exprPostfixPrime(tail, BinaryExpr(prevExpr, op, VariableExpr(id)), contextTokens)
+        exprPostfixPrime(tail, BinaryExprNode(prevExpr, op, VariableExprNode(id)), contextTokens)
 
       // should have id after .
-      case Token(DOT, _) :: t :: _ =>
-        throw ExpectedButFoundError(ID, t, contextTokens)
+      case Token(DOT, _) :: t :: _ => throw SyntaxError(ID, t, contextTokens)
 
       case _ => (Some(prevExpr), IsParsed(tokens))
 
@@ -281,8 +275,7 @@ object Expression:
             case _ => (Some(List()), IsParsed(tokens))
 
         // should have , between function arguments
-        case t :: _ if t.tokenCode != RPAR && t.tokenCode != LACC =>
-          throw ExpectedButFoundError(COMMA, t, tokens)
+        case t :: _ if t.tokenCode != RPAR && t.tokenCode != LACC => throw SyntaxError(COMMA, t, tokens)
 
         case _ => (Some(expressions), IsParsed(tokens))
 
@@ -293,20 +286,19 @@ object Expression:
           case (Some(exp), IsParsed(remainingTokens)) =>
             exprHelper(remainingTokens, List(exp)) match
               case (Some(exprs), IsParsed(Token(RPAR, _) :: remainingTokens)) =>
-                (Option(FunctionCallExpr(funName, exprs *)), IsParsed(remainingTokens))
+                (Option(FunctionCallExprNode(funName, exprs *)), IsParsed(remainingTokens))
 
               // should have ) at the end of function call
-              case (Some(_), IsParsed(t :: _)) =>
-                throw ExpectedButFoundError(RPAR, t, tokens)
+              case (Some(_), IsParsed(t :: _)) => throw SyntaxError(RPAR, t, tokens)
 
               case _ => (None, NotParsed(tokens))
           case _ => (None, NotParsed(tokens))
 
       // ID
-      case (varName@TokenWithValue(ID, _, _)) :: tail => (Some(VariableExpr(varName)), IsParsed(tail))
+      case (varName@TokenWithValue(ID, _, _)) :: tail => (Some(VariableExprNode(varName)), IsParsed(tail))
 
       // INT | DOUBLE | CHAR | STRING
-      case (t@TokenWithValue(INT | DOUBLE | CHAR | STRING, _, _)) :: tail => (Some(LiteralExpr(t)), IsParsed(tail))
+      case (t@TokenWithValue(INT | DOUBLE | CHAR | STRING, _, _)) :: tail => (Some(LiteralExprNode(t)), IsParsed(tail))
 
       // LPAR expr RPAR
       case Token(LPAR, _) :: tail =>
@@ -314,8 +306,7 @@ object Expression:
           case (exp, IsParsed(Token(RPAR, _) :: tail)) =>(exp, IsParsed(tail))
 
           // should have matching )
-          case (Some(_), IsParsed(t :: _)) =>
-            throw ExpectedButFoundError(RPAR, t, tokens)
+          case (Some(_), IsParsed(t :: _)) => throw SyntaxError(RPAR, t, tokens)
 
           case _ => (None, NotParsed(tokens))
 

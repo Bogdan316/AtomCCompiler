@@ -85,11 +85,6 @@ object Token:
       case TokenCode.CHAR => "a char"
       case TokenCode.STRING => "a string"
 
-  def stringify(token: Either[Tokens, TokenCode]): String =
-    token match
-      case Left(tokens) => stringify(tokens)
-      case Right(tokenCode) => stringify(tokenCode)
-
   def stringify(token: Token): String =
     token.tokenCode match
       case TokenCode.ID | TokenCode.INT | TokenCode.DOUBLE | TokenCode.CHAR | TokenCode.STRING =>
@@ -99,7 +94,7 @@ object Token:
 
       case code => stringify(code)
 
-  def stringify(tokens: List[Token]): String =
+  def stringify(tokens: Tokens): String =
     if tokens.isEmpty then
       ""
     else
