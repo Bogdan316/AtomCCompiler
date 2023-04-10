@@ -137,6 +137,6 @@ class Scope(ast: AstNode):
 
 
 object Scope extends App:
-  val parsedAst = Parser(Lexer(new File("testlex.c")).tokenizeFile).parse
+  val parsedAst = Parser(Lexer(new File("src/test/testCode/testad.c")).tokenizeFile).parse
   val dd = Scope(parsedAst)
   DomainManager.pprint(dd.constructDomains)
