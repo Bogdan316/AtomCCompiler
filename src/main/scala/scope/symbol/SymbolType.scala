@@ -12,7 +12,6 @@ case class SymbolType
 (
   baseType: BaseType,
   arraySize: Option[Int] = None,
-  structId: Option[String] = None,
   structSymbol: Option[CompilerSymbol] = None
 ):
   def size: Int =
@@ -44,8 +43,6 @@ case object SymbolType:
 
         case _ => throw  RuntimeException("Unexpected type in TypeBase")
 
-    val structName = structSymbol.map(_.symbolDef.name)
-
     arraySize
-      .map(s => SymbolType(baseType, s.size, structName, structSymbol))
-      .getOrElse(SymbolType(baseType, None, structName, structSymbol))
+      .map(s => SymbolType(baseType, s.size, structSymbol))
+      .getOrElse(SymbolType(baseType, None, structSymbol))

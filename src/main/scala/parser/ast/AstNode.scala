@@ -3,7 +3,7 @@ package parser.ast
 import parser.ast.AstRoot.AstRoot
 import parser.ast.Definition.{FunctionDefNode, StructDefNode, VariableDefNode}
 import parser.ast.DefinitionUtils.{ArraySizeNode, FunctionParamNode, TypeBaseNode}
-import parser.ast.Expression.{BinaryExprNode, CastExprNode, FunctionCallExprNode, LiteralExprNode, UnaryExprNode, VariableExprNode}
+import parser.ast.ExpressionNode.{BinaryExprNode, CastExprNode, FunctionCallExprNode, LiteralExprNode, UnaryExprNode, VariableExprNode}
 import parser.ast.Statement.{CompoundStmNode, ExpressionStmNode, IfStmNode, ReturnStmNode, WhileStmNode}
 import token.Token.stringify
 import token.TokenCode.{CHAR, INT, STRING}

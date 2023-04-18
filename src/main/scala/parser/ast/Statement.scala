@@ -1,7 +1,7 @@
 package parser.ast
 
 import parser.ast.Definition.variableDef
-import parser.ast.Expression.expr
+import parser.ast.ExpressionNode.expr
 import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
 import token.Token
@@ -15,13 +15,13 @@ object Statement:
 
   case class CompoundStmNode(statements: Statement*) extends Statement
 
-  case class IfStmNode(condition: Expression, thenBranch: Statement, elseBranch: Option[Statement] = None) extends Statement
+  case class IfStmNode(condition: ExpressionNode, thenBranch: Statement, elseBranch: Option[Statement] = None) extends Statement
 
-  case class WhileStmNode(condition: Expression, body: Statement) extends Statement
+  case class WhileStmNode(condition: ExpressionNode, body: Statement) extends Statement
 
-  case class ReturnStmNode(expr: Option[Expression] = None) extends Statement
+  case class ReturnStmNode(expr: Option[ExpressionNode] = None) extends Statement
 
-  case class ExpressionStmNode(expr: Option[Expression] = None) extends Statement
+  case class ExpressionStmNode(expr: Option[ExpressionNode] = None) extends Statement
 
   def compoundStm(tokens: Tokens): ParsingPair[CompoundStmNode] =
     // LACC (varDef | stm)* RACC

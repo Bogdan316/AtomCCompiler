@@ -1,11 +1,11 @@
 package scope
 import lexer.Lexer
 import parser.Parser
-import parser.ast.{AstNode, AstRoot, Statement}
+import parser.ast.{AstNode, AstRoot, ExpressionNode, Statement}
 import parser.ast.Definition.*
 import parser.ast.DefinitionUtils.*
+import parser.ast.ExpressionNode.*
 import parser.ast.Statement.*
-import parser.ast.AstNode
 import scope.domain.{Domain, DomainManager}
 import token.{Token, TokenWithValue}
 import token.TokenCode.*
@@ -14,6 +14,7 @@ import scope.symbol.CompilerSymbol.*
 import scope.symbol.SymbolKind.*
 import scope.symbol.BaseType.*
 import scope.exceptions.RedefinedSymbolError
+import types.{ConstantValue, LeftRightValue, LeftValue, ReturnType}
 
 import java.io.File
 import scala.collection.mutable
@@ -101,7 +102,10 @@ class Scope(ast: AstNode):
       case CompoundStmNode(statements*) =>
         statements.foldLeft(domainManager)((prevDomain, member) => walkAst(member, prevDomain, owner))
 
-      case IfStmNode(_, thenBranch, elseBranch) =>
+      case IfStmNode(condition, thenBranch, elseBranch) =>
+        println(typeCheckExpression(condition, domainManager, owner))
+
+
         val thenDomain = thenBranch match
           case compoundStm: CompoundStmNode =>
             walkAst(compoundStm, domainManager.pushDomain("if"), owner)
@@ -131,6 +135,28 @@ class Scope(ast: AstNode):
 
       case _ => domainManager
 
+  private def typeCheckExpression(expr: ExpressionNode, domainManager: DomainManager, owner: Option[SymbolDefinition]): ReturnType =
+    expr match
+      case LiteralExprNode(TokenWithValue(INT, _, _)) => ConstantValue(SymbolType(TB_INT))
+
+      case LiteralExprNode(TokenWithValue(DOUBLE, _, _)) => ConstantValue(SymbolType(TB_DOUBLE))
+
+      case LiteralExprNode(TokenWithValue(CHAR, _, _)) => ConstantValue(SymbolType(TB_CHAR))
+
+      case LiteralExprNode(TokenWithValue(STRING, _, _)) => ConstantValue(SymbolType(TB_CHAR, Some(0)))
+
+      // TODO: maybe check that the symbol is a variable explicitly
+      case VariableExprNode(TokenWithValue(ID, _, varName: String)) =>
+        domainManager.findInAnyDomain(varName) match
+          case Some(_: FunctionSymbol) => throw RuntimeException("a function needs to be called")
+          // TODO: do better with arrays
+          case Some(sy) => LeftRightValue(sy.symbolDef.symbolType)
+          case _ => throw RuntimeException("ID not found")
+
+//      case FunctionCallExprNode()
+
+
+      case _ => throw RuntimeException("Big news")
 
   def constructDomains: DomainManager  =
     walkAst(ast, DomainManager(), None)

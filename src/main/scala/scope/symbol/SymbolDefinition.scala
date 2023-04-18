@@ -16,9 +16,9 @@ case object SymbolDefinition:
     val ident = "\t" * depth
     println(s"${ident}${symbolDef.getClass.getSimpleName}:")
     symbolDef match
-      case SymbolDefinition(name, kind, SymbolType(baseType, arraySize, structId, _), owner) =>
+      case SymbolDefinition(name, kind, SymbolType(baseType, arraySize, structSymbol), owner) =>
         println(s"$ident\tname: $name")
         println(s"$ident\tkind: $kind")
-        println(s"$ident\ttype: $baseType${structId.map(id => s" $id").getOrElse("")}")
+        println(s"$ident\ttype: $baseType${structSymbol.map(sy => s" ${sy.symbolDef.name}").getOrElse("")}")
         println(s"$ident\tarraySize: ${arraySize.getOrElse("")}")
         println(s"$ident\towner: ${owner.map(_.name).getOrElse("global")}")
