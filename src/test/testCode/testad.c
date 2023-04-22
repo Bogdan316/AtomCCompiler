@@ -1,18 +1,32 @@
-int foo(int a, int b){}
+int x;
+char y;
+double z;
+double p[100];
 
-struct ass{
-    int c[10];
-};
+struct S1{
+	int i;
+	double d[2];
+	char x;
+	};
+struct S1 p1;
+struct S1 vp[10];
 
-struct as{
-    struct ass b[10];
-};
+double sum(double x[5],int n){
+	double r;
+	int i;
+	r=0;
+	i=0;
+	while(i<n){
+		double n;
+		n=x[i];
+		r=r+n;
+		i=i+1;
+		}
+	return r;
+	}
 
-double a;
-struct as b[100];
+// TODO: fix recursive calls
 
-void f(int p){
-	int d;
-	if(d = a)
-	    printf("asd");
+void f(struct S1 p){
+	sum(p.i);
 	}

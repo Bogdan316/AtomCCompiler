@@ -5,7 +5,7 @@ import parser.ast.DefinitionNodeRules.*
 import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
 import token.Token
-import token.TokenCode.{END, ID}
+import token.Token.DelimiterToken.EndToken
 
 import scala.annotation.tailrec
 
@@ -19,15 +19,14 @@ object AstRootRules:
         case (Some(varDefinition), IsParsed(remainingTokens)) => helper(remainingTokens, definitions :+ varDefinition)
         case _ =>
           variableDef(crtTokens) match
-            case (Some(structDefinition), IsParsed(remainingTokens)) => 
+            case (Some(structDefinition), IsParsed(remainingTokens)) =>
               helper(remainingTokens, definitions :+ structDefinition)
             case _ => structDef(crtTokens) match
-              case (Some(functionDefinition), IsParsed(remainingTokens)) => 
+              case (Some(functionDefinition), IsParsed(remainingTokens)) =>
                 helper(remainingTokens, definitions :+ functionDefinition)
               case (_, remainingTokens) =>
                 remainingTokens.get match
-                  case Token(END, _) :: Nil => definitions
-                  case t => throw SyntaxError(END, t.head, tokens)
+                  case EndToken(_) :: Nil => definitions
+                  case t => throw SyntaxError("EOF", t.head, tokens)
 
     (Option(AstRoot(helper(tokens, List()) *)), IsParsed(tokens))
-    

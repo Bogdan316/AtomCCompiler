@@ -22,7 +22,7 @@ case class Domain
   structMemberIdx: Int = 0,
   paramsIdx: Int = 0
 ):
-  
+
   def contains(symbolName: String): Boolean = symbols.exists(_.symbolDef.name == symbolName)
 
   def find(symbolName: String): Option[CompilerSymbol] = symbols.find(_.symbolDef.name == symbolName)
@@ -37,9 +37,9 @@ case class Domain
       case s: FunctionParameterSymbol => this.copy(symbols = symbols :+ s, paramsIdx = paramsIdx + 1)
 
       case s => this.copy(symbols = symbols :+ s)
-      
-  def locals: List[LocalVariableSymbol] = symbols.collect{case l: LocalVariableSymbol => l} 
-  
+
+  def locals: List[LocalVariableSymbol] = symbols.collect{case l: LocalVariableSymbol => l}
+
   def params: List[FunctionParameterSymbol] = symbols.collect{case p: FunctionParameterSymbol => p}
 
 case object Domain:

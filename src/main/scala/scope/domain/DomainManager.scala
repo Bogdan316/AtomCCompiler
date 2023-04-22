@@ -61,4 +61,3 @@ case object DomainManager:
     val ident = "\t" * depth
     println(s"${ident}${domainManager.getClass.getSimpleName}:")
     domainManager.domains.foreach(d => Domain.pprint(d, depth + 1))
-  

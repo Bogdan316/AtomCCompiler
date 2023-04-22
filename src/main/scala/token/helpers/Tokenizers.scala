@@ -1,7 +1,13 @@
 package token.helpers
 
-import token.TokenCode.*
-import token.{NoValueToken, Token, TokenWithValue}
+import token.{Token, TokenUtils}
+import token.Token.TypeToken.*
+import token.Token.KeywordToken.*
+import token.Token.LiteralToken.*
+import token.Token.DelimiterToken.*
+import token.Token.IdentifierToken
+import token.Token.OperatorToken.*
+import token.TokenUtils.{isChar, isString, isInteger, isDouble}
 
 import scala.util.Try
 
@@ -9,62 +15,62 @@ object Tokenizers:
   def tokenizeKeyword(line: Int, token: String): Option[Token] =
     Option(
       token match
-        case "char" => NoValueToken(TYPE_CHAR, line)
-        case "int" => NoValueToken(TYPE_INT, line)
-        case "double" => NoValueToken(TYPE_DOUBLE, line)
-        case "struct" => NoValueToken(STRUCT, line)
-        case "if" => NoValueToken(IF, line)
-        case "else" => NoValueToken(ELSE, line)
-        case "while" => NoValueToken(WHILE, line)
-        case "void" => NoValueToken(VOID, line)
-        case "return" => NoValueToken(RETURN, line)
-        case _ => new TokenWithValue[String](ID, line, token)
+        case "char" => CharTypeToken(line)
+        case "int" => IntTypeToken(line)
+        case "double" => DoubleTypeToken(line)
+        case "struct" => StructTypeToken(line)
+        case "if" => IfToken(line)
+        case "else" => ElseToken(line)
+        case "while" => WhileToken(line)
+        case "void" => VoidTypeToken(line)
+        case "return" => ReturnToken(line)
+        case _ => IdentifierToken(line, token)
     )
 
   def tokenizeDelimiter(line: Int, token: String): Option[Token] =
     Try(
       token match
-        case "," => NoValueToken(COMMA, line)
-        case ";" => NoValueToken(SEMICOLON, line)
-        case "(" => NoValueToken(LPAR, line)
-        case ")" => NoValueToken(RPAR, line)
-        case "[" => NoValueToken(LBRACKET, line)
-        case "]" => NoValueToken(RBRACKET, line)
-        case "{" => NoValueToken(LACC, line)
-        case "}" => NoValueToken(RACC, line)
+        case "," => CommaToken(line)
+        case ";" => SemicolonToken(line)
+        case "(" => LparToken(line)
+        case ")" => RparToken(line)
+        case "[" => LbracketToken(line)
+        case "]" => RbracketToken(line)
+        case "{" => LaccToken(line)
+        case "}" => RaccToken(line)
     ).toOption
 
   def tokenizeOperator(line: Int, token: String, nextChar: Char): Option[Token] =
     Try(
       token match
-        case "+" => NoValueToken(ADD, line)
-        case "-" => NoValueToken(SUB, line)
-        case "*" => NoValueToken(MUL, line)
-        case "/" => NoValueToken(DIV, line)
-        case "." => NoValueToken(DOT, line)
-        case "&&" => NoValueToken(AND, line)
-        case "||" => NoValueToken(OR, line)
-        case "==" => NoValueToken(EQUAL, line)
-        case "!=" => NoValueToken(NOTEQ, line)
-        case "<=" => NoValueToken(LESSEQ, line)
-        case ">=" => NoValueToken(GREATEREQ, line)
-        case "!" if nextChar != '=' => NoValueToken(NOT, line)
-        case "=" if nextChar != '=' => NoValueToken(ASSIGN, line)
-        case "<" if nextChar != '=' => NoValueToken(LESS, line)
-        case ">" if nextChar != '=' => NoValueToken(GREATER, line)
+        case "+" => AddToken(line)
+        case "-" => SubToken(line)
+        case "*" => MulToken(line)
+        case "/" => DivToken(line)
+        case "." => DotToken(line)
+        case "&&" => AndToken(line)
+        case "||" => OrToken(line)
+        case "==" => EqualToken(line)
+        case "!=" => NoteqToken(line)
+        case "<=" => LesseqToken(line)
+        case ">=" => GreatereqToken(line)
+        case "!" if nextChar != '=' => NotToken(line)
+        case "=" if nextChar != '=' => AssignToken(line)
+        case "<" if nextChar != '=' => LessToken(line)
+        case ">" if nextChar != '=' => GreaterToken(line)
     ).toOption
 
   def tokenizeConstant(line: Int, token: String, nextChar: Char): Option[Token] =
     Try(token match
-      case t if Token.isChar(t) =>
-        TokenWithValue[String](CHAR, line, t.replace("'", ""))
+      case t if isChar(t) =>
+        CharLiteralToken(line, t.replace("'", ""))
 
-      case t if Token.isString(t) =>
-        TokenWithValue[String](STRING, line, t.replace("\"", ""))
+      case t if isString(t) =>
+        StringLiteralToken(line, t.replace("\"", ""))
 
-      case t if !".eE".contains(nextChar) && !nextChar.isDigit && Token.isInteger(t) =>
-        TokenWithValue[Int](INT, line, t.toInt)
+      case t if !".eE".contains(nextChar) && !nextChar.isDigit && isInteger(t) =>
+        IntLiteralToken(line, t.toInt)
 
-      case t if !nextChar.isDigit && Token.isDouble(t) && !".eE+-".contains(nextChar) =>
-        TokenWithValue[Double](DOUBLE, line, t.toDouble)
+      case t if !nextChar.isDigit && isDouble(t) && !".eE+-".contains(nextChar) =>
+        DoubleLiteralToken(line, t.toDouble)
     ).toOption

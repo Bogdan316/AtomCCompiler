@@ -1,6 +1,10 @@
 package parser.ast
 
-import token.{Token, TokenWithValue}
+import token.Token.{IdentifierToken, LiteralToken, OperatorToken, TypeToken}
+import token.Token
+import token.Token.OperatorToken.{ArithmeticLogicOperatorToken, AssignToken}
+
+import scala.reflect.ClassTag
 
 trait AstNode
 
@@ -32,11 +36,11 @@ object AstNode:
 
   object DefinitionNode:
 
-    final case class StructDefNode (id: Token, variableDefinitions: VariableDefNode*) extends DefinitionNode
+    final case class StructDefNode (id: IdentifierToken, variableDefinitions: VariableDefNode*) extends DefinitionNode
 
-    final case class VariableDefNode (typeBase: DefinitionUtils.TypeBaseNode, id: Token, arraySize: Option[DefinitionUtils.ArraySizeNode] = None ) extends DefinitionNode
+    final case class VariableDefNode (typeBase: DefinitionUtils.TypeBaseNode, id: IdentifierToken, arraySize: Option[DefinitionUtils.ArraySizeNode] = None ) extends DefinitionNode
 
-    final case class FunctionDefNode (returnType: DefinitionUtils.TypeBaseNode, id: Token, compoundStm: AstNode.StatementNode.CompoundStmNode, functionParams: DefinitionUtils.FunctionParamNode * ) extends DefinitionNode
+    final case class FunctionDefNode (returnType: DefinitionUtils.TypeBaseNode, id: IdentifierToken, compoundStm: AstNode.StatementNode.CompoundStmNode, functionParams: DefinitionUtils.FunctionParamNode * ) extends DefinitionNode
 
 
 
@@ -44,11 +48,11 @@ object AstNode:
 
   object DefinitionUtils:
 
-    final case class TypeBaseNode (baseType: Token, structId: Option[Token] = None) extends DefinitionUtils
+    final case class TypeBaseNode (baseType: TypeToken, structId: Option[IdentifierToken] = None) extends DefinitionUtils
 
     final case class ArraySizeNode (size: Option[Int] = None) extends DefinitionUtils
 
-    final case class FunctionParamNode (typeBase: TypeBaseNode, id: Token, arraySize: Option[ArraySizeNode] = None) extends DefinitionUtils
+    final case class FunctionParamNode (typeBase: TypeBaseNode, id: IdentifierToken, arraySize: Option[ArraySizeNode] = None) extends DefinitionUtils
 
 
 
@@ -56,17 +60,19 @@ object AstNode:
 
   object ExpressionNode:
 
-    final case class BinaryExprNode (left: ExpressionNode, operator: Token, right: ExpressionNode) extends ExpressionNode
+    final case class BinaryExprNode (left: ExpressionNode, operator: ArithmeticLogicOperatorToken, right: ExpressionNode) extends ExpressionNode
+    
+    final case class AssignmentExprNode (left: ExpressionNode, right: ExpressionNode) extends ExpressionNode
 
-    final case class UnaryExprNode (operator: Token, right: ExpressionNode) extends ExpressionNode
+    final case class UnaryExprNode (operator: OperatorToken, right: ExpressionNode) extends ExpressionNode
 
-    final case class FunctionCallExprNode (funName: Token, expressions: ExpressionNode *) extends ExpressionNode
+    final case class FunctionCallExprNode (funName: IdentifierToken, expressions: ExpressionNode *) extends ExpressionNode
 
-    final case class LiteralExprNode[T] (literal: TokenWithValue[T]) extends ExpressionNode
+    final case class LiteralExprNode[T](literal: LiteralToken[T]) extends ExpressionNode
 
-    final case class VariableExprNode[T] (variable: TokenWithValue[T]) extends  ExpressionNode
+    final case class VariableExprNode (variable: IdentifierToken) extends  ExpressionNode
 
-    final case class FieldAccessExprNode[T] (left: ExpressionNode, field: TokenWithValue[T]) extends ExpressionNode
+    final case class FieldAccessExprNode (left: ExpressionNode, field: IdentifierToken) extends ExpressionNode
 
     final case class ArrayAccessExprNode (arrayExpression: ExpressionNode, idxExpression: ExpressionNode) extends ExpressionNode
 

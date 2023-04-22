@@ -1,14 +1,19 @@
 package parser.ast
 
 import parser.ast.AstNode.AstRoot
-import parser.ast.AstNode.DefinitionUtils.*
 import parser.ast.AstNode.AstRoot.*
-import parser.ast.AstNode.StatementNode.*
 import parser.ast.AstNode.DefinitionNode.*
+import parser.ast.AstNode.DefinitionUtils.*
 import parser.ast.AstNode.ExpressionNode.*
-import token.Token.stringify
-import token.TokenCode.*
-import token.TokenWithValue
+import parser.ast.AstNode.StatementNode.*
+import token.Token.DelimiterToken.*
+import token.Token.KeywordToken.*
+import token.Token.LiteralToken.*
+import token.Token.OperatorToken.*
+import token.Token.TypeToken.*
+import token.Token.{IdentifierToken, TokenWithValue}
+import token.TokenUtils.stringify
+
 
 
 object AstNodeUtil:
@@ -62,20 +67,20 @@ object AstNodeUtil:
         println(s"$ident\tParams:")
         expressions.foreach(e => pprint(e, depth + 2))
 
-      case LiteralExprNode(TokenWithValue(code, _, value)) =>
-        code match
-          case INT => println(s"$ident\tvalue: $value")
-          case STRING => println(s"$ident\tvalue: \"$value\"")
-          case CHAR => println(s"$ident\tvalue: \'$value\'")
+      case LiteralExprNode(token) =>
+        token match
+          case IntLiteralToken(_, value) => println(s"$ident\tvalue: $value")
+          case StringLiteralToken(_, value) => println(s"$ident\tvalue: \"$value\"")
+          case CharLiteralToken(_, value) => println(s"$ident\tvalue: \'$value\'")
           case _ =>
 
       case BinaryExprNode(left, op, right) =>
         pprint(left, depth + 1)
-        println(s"$ident\t${op.tokenCode}")
+        println(s"$ident\t${stringify(op)}")
         pprint(right, depth + 1)
 
       case UnaryExprNode(op, expr) =>
-        println(s"$ident\t${op.tokenCode}")
+        println(s"$ident\t${stringify(op)}")
         pprint(expr, depth + 1)
 
       case VariableExprNode(t) =>
@@ -113,7 +118,7 @@ object AstNodeUtil:
       case ExpressionStmNode(expr) =>
         expr.foreach(e => pprint(e, depth + 1))
 
-      case FieldAccessExprNode(expr, TokenWithValue(ID, _, fieldName: String)) =>
+      case FieldAccessExprNode(expr, IdentifierToken(_, fieldName)) =>
         pprint(expr, depth + 1)
         println(s"$ident\tfieldName: $fieldName")
 
@@ -123,5 +128,8 @@ object AstNodeUtil:
         println(s"$ident\tidxExpression:")
         pprint(idxExpression, depth + 2)
 
-      case _ =>
-        
+      case AssignmentExprNode(left, right) =>
+        pprint(left, depth + 1)
+        println(s"$ident\t=")
+        pprint(right, depth + 1)
+

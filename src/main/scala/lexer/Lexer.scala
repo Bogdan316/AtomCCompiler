@@ -1,7 +1,9 @@
 package lexer
 
 import parser.parsed.Tokens
-import token.{NoValueToken, Token, TokenCode}
+import token.Token.DelimiterToken.EndToken
+import token.{Token, TokenUtils}
+import token.TokenUtils.*
 import token.helpers.Tokenizers
 
 import java.io.*
@@ -15,9 +17,9 @@ case class Lexer(sourceFile: File):
   private def getToken(line: Int, tokenValue: String, nextChar: Char): Option[Token] =
     tokenValue.trim match
       case t if t.isEmpty => Option.empty
-      case t if Token.isIdentifier(t) && !Token.isCharFromId(nextChar) => Tokenizers.tokenizeKeyword(line, t)
-      case t if Token.isDelimiter(t) => Tokenizers.tokenizeDelimiter(line, t)
-      case t if Token.isOperator(t) => Tokenizers.tokenizeOperator(line, t, nextChar)
+      case t if isIdentifier(t) && !isCharFromId(nextChar) => Tokenizers.tokenizeKeyword(line, t)
+      case t if isDelimiter(t) => Tokenizers.tokenizeDelimiter(line, t)
+      case t if isOperator(t) => Tokenizers.tokenizeOperator(line, t, nextChar)
       case t => Tokenizers.tokenizeConstant(line, t, nextChar)
 
   private def tokenizeLine(idx: Int, line: String): Tokens =
@@ -51,7 +53,7 @@ case class Lexer(sourceFile: File):
     bufferedSource.close()
 
     // add the END token
-    tokens :+ NoValueToken(TokenCode.END, tokens.last.line + 1)
+    tokens :+ EndToken(tokens.last.line + 1)
 
 
   def printTokens(): Unit =

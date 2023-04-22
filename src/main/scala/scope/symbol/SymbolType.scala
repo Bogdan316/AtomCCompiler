@@ -5,8 +5,8 @@ import parser.ast.AstNode.DefinitionUtils.{ArraySizeNode, TypeBaseNode}
 import scope.domain.DomainManager
 import scope.symbol.CompilerSymbol.StructSymbol
 import scope.symbol.BaseType
-import token.{Token, TokenWithValue}
-import token.TokenCode.{STRUCT, TYPE_CHAR, TYPE_DOUBLE, TYPE_INT, VOID}
+import token.Token.TypeToken.*
+import token.Token
 
 case class SymbolType
 (
@@ -31,17 +31,15 @@ case object SymbolType:
   def apply(typeBase: TypeBaseNode, arraySize: Option[ArraySizeNode], structSymbol: Option[StructSymbol]): SymbolType =
     val baseType =
       typeBase match
-        case TypeBaseNode(Token(STRUCT, _), _) => BaseType.TB_STRUCT
+        case TypeBaseNode(StructTypeToken(_), _) => BaseType.TB_STRUCT
 
-        case TypeBaseNode(Token(TYPE_CHAR, _), _) => BaseType.TB_CHAR
+        case TypeBaseNode(CharTypeToken(_), _) => BaseType.TB_CHAR
 
-        case TypeBaseNode(Token(TYPE_INT, _), _) => BaseType.TB_INT
+        case TypeBaseNode(IntTypeToken(_), _) => BaseType.TB_INT
 
-        case TypeBaseNode(Token(TYPE_DOUBLE, _), _) => BaseType.TB_DOUBLE
+        case TypeBaseNode(DoubleTypeToken(_), _) => BaseType.TB_DOUBLE
 
-        case TypeBaseNode(Token(VOID, _), _) => BaseType.TB_VOID
-
-        case _ => throw  RuntimeException("Unexpected type in TypeBase")
+        case TypeBaseNode(VoidTypeToken(_), _) => BaseType.TB_VOID
 
     arraySize
       .map(s => SymbolType(baseType, s.size, structSymbol))

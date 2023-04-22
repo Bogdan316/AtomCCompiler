@@ -11,7 +11,7 @@ case class SymbolDefinition
 
 
 case object SymbolDefinition:
-  
+
   def pprint(symbolDef: SymbolDefinition, depth: Int = 0): Unit =
     val ident = "\t" * depth
     println(s"${ident}${symbolDef.getClass.getSimpleName}:")

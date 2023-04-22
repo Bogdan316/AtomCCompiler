@@ -4,112 +4,86 @@ import parser.parsed.Tokens
 
 import scala.annotation.tailrec
 
-case class Token(tokenCode: TokenCode, line: Int):
+import scala.reflect.ClassTag
+
+sealed trait Token:
+
+  def line: Int
   override def toString: String =
-    s"$line\t$tokenCode"
+    s"$line\t${this.getClass.getSimpleName}"
+
 
 object Token:
-  private val delimiters = ",;()[]{}"
-  private val operators = "+-*/.&&||!==<=>="
 
-  def isDelimiter(token: String): Boolean = delimiters.contains(token)
+  sealed trait TokenWithValue[T: ClassTag] extends Token:
 
-  def isOperator(token: String): Boolean = operators.contains(token)
+    def tokenValue: T
 
-  def isChar(token: String): Boolean = token.length == 3 && token.charAt(0) == '\'' && token.last == '\''
+    override def toString: String =
+      super.toString + s":$tokenValue"
 
-  def isString(token: String): Boolean = token.length >= 2 && token.charAt(0) == '\"' && token.last == '\"'
+  final case class IdentifierToken(override val line: Int, override val tokenValue: String) extends TokenWithValue[String]
 
-  def isInteger(token: String): Boolean = token.forall(_.isDigit) && token.nonEmpty
-
-  private def isDoubleNoDot(token: String): Boolean =
-    token.toLowerCase.split('e').toList match
-      case base :: exponent :: Nil => isInteger(base) &&
-        (isInteger(exponent) || ("+-".contains(exponent.charAt(0)) && isInteger(exponent.substring(1))))
-      case _ => false
-
-  private def isDoubleWithDot(token: String): Boolean =
-    token.split('.').toList match
-      case base :: exponent :: Nil => isInteger(base) && (isInteger(exponent) || isDoubleNoDot(exponent))
-      case _ => false
-
-  def isDouble(token: String): Boolean = isDoubleNoDot(token) || isDoubleWithDot(token)
-
-  def isIdentifier(token: String): Boolean =
-    (token.charAt(0).isLetter || token.charAt(0) == '_') && token.forall(isCharFromId)
-
-  def isCharFromId(char: Char): Boolean =
-    char.isLetterOrDigit || char == '_'
-
-  def stringify(tokenCode: TokenCode): String =
-    tokenCode match
-      case TokenCode.TYPE_CHAR => "char"
-      case TokenCode.TYPE_INT => "int"
-      case TokenCode.TYPE_DOUBLE => "double"
-      case TokenCode.STRUCT => "struct"
-      case TokenCode.IF => "if"
-      case TokenCode.ELSE => "else "
-      case TokenCode.WHILE => "while"
-      case TokenCode.VOID => "void"
-      case TokenCode.RETURN => "return"
-
-      case TokenCode.COMMA => ","
-      case TokenCode.SEMICOLON => ";"
-      case TokenCode.LPAR => "("
-      case TokenCode.RPAR => ")"
-      case TokenCode.LBRACKET => "["
-      case TokenCode.RBRACKET => "]"
-      case TokenCode.LACC => "{"
-      case TokenCode.RACC => "}"
-      case TokenCode.END => "EOF"
-
-      case TokenCode.ADD => "+"
-      case TokenCode.SUB => "-"
-      case TokenCode.MUL => "*"
-      case TokenCode.DIV => "/"
-      case TokenCode.DOT => "."
-      case TokenCode.AND => "&&"
-      case TokenCode.OR => "||"
-      case TokenCode.NOT => "! "
-      case TokenCode.ASSIGN => "="
-      case TokenCode.EQUAL => "=="
-      case TokenCode.NOTEQ => "!="
-      case TokenCode.LESS => "<"
-      case TokenCode.LESSEQ => "<="
-      case TokenCode.GREATER => ">"
-      case TokenCode.GREATEREQ => ">="
-
-      case TokenCode.ID => "an identifier"
-      case TokenCode.INT => "an integer"
-      case TokenCode.DOUBLE => "a double"
-      case TokenCode.CHAR => "a char"
-      case TokenCode.STRING => "a string"
-
-  def stringify(token: Token): String =
-    token.tokenCode match
-      case TokenCode.ID | TokenCode.INT | TokenCode.DOUBLE | TokenCode.CHAR | TokenCode.STRING =>
-        token match
-          case TokenWithValue(_, _, value) => s"$value"
-          case _ => ""
-
-      case code => stringify(code)
-
-  def stringify(tokens: Tokens): String =
-    if tokens.isEmpty then
-      ""
-    else
-      tokens.tail.foldLeft((stringify(tokens.head), tokens.head, "\t"))((acc, token) => {
-        val indentation = token.tokenCode match
-          case TokenCode.LACC => acc._3 + "\t"
-          case TokenCode.RACC => acc._3.substring(0, acc._3.length - 1)
-          case _ => acc._3
+  sealed trait LiteralToken[T] extends TokenWithValue[T]:
+    def tokenValue: T
+    
+  object LiteralToken:
+    final case class IntLiteralToken(override val line: Int, override val tokenValue: Int) extends LiteralToken[Int]
+    final case class DoubleLiteralToken(override val line: Int, override val tokenValue: Double) extends LiteralToken[Double]
+    final case class CharLiteralToken(override val line: Int, override val tokenValue: String) extends LiteralToken[String]
+    final case class StringLiteralToken(override val line: Int, override val tokenValue: String) extends LiteralToken[String]
 
 
-        val stringTokens =
-          if acc._2.line != token.line then
-            acc._1 + "\n" + indentation + stringify(token)
-          else
-            acc._1 + " " + stringify(token)
+  sealed trait TypeToken extends Token
+  object TypeToken:
+    final case class CharTypeToken(override val line: Int) extends TypeToken
+    final case class IntTypeToken(override val line: Int) extends TypeToken
+    final case class DoubleTypeToken(override val line: Int) extends TypeToken
+    final case class StructTypeToken(override val line: Int) extends TypeToken
+    final case class VoidTypeToken(override val line: Int) extends TypeToken
 
-        (stringTokens, token, indentation)
-      })._1.trim
+  sealed trait KeywordToken extends Token
+  object KeywordToken:
+    final case class IfToken(override val line: Int) extends KeywordToken
+    final case class ElseToken(override val line: Int) extends KeywordToken
+    final case class WhileToken(override val line: Int) extends KeywordToken
+    final case class ReturnToken(override val line: Int) extends KeywordToken
+
+
+  sealed trait DelimiterToken extends Token
+  object DelimiterToken:
+    final case class CommaToken(override val line: Int) extends DelimiterToken
+    final case class SemicolonToken(override val line: Int) extends DelimiterToken
+    final case class LparToken(override val line: Int) extends DelimiterToken
+    final case class RparToken(override val line: Int) extends DelimiterToken
+    final case class LbracketToken(override val line: Int) extends DelimiterToken
+    final case class RbracketToken(override val line: Int) extends DelimiterToken
+    final case class LaccToken(override val line: Int) extends DelimiterToken
+    final case class RaccToken(override val line: Int) extends DelimiterToken
+    final case class EndToken(override val line: Int) extends DelimiterToken
+
+
+  sealed trait OperatorToken extends Token
+  object OperatorToken:
+    sealed trait ArithmeticOperatorToken extends ArithmeticLogicOperatorToken
+    final case class AddToken(override val line: Int) extends ArithmeticOperatorToken
+    final case class SubToken(override val line: Int) extends ArithmeticOperatorToken
+    final case class MulToken(override val line: Int) extends ArithmeticOperatorToken
+    final case class DivToken(override val line: Int) extends ArithmeticOperatorToken
+    
+    
+    final case class DotToken(override val line: Int) extends OperatorToken
+    final case class NotToken(override val line: Int) extends OperatorToken
+    final case class AssignToken(override val line: Int) extends OperatorToken
+
+    sealed trait LogicalOperatorToken extends ArithmeticLogicOperatorToken
+    final case class AndToken(override val line: Int) extends LogicalOperatorToken
+    final case class OrToken(override val line: Int) extends LogicalOperatorToken
+    final case class EqualToken(override val line: Int) extends LogicalOperatorToken
+    final case class NoteqToken(override val line: Int) extends LogicalOperatorToken
+    final case class LessToken(override val line: Int) extends LogicalOperatorToken
+    final case class LesseqToken(override val line: Int) extends LogicalOperatorToken
+    final case class GreaterToken(override val line: Int) extends LogicalOperatorToken
+    final case class GreatereqToken(override val line: Int) extends LogicalOperatorToken
+    
+    sealed trait ArithmeticLogicOperatorToken extends OperatorToken
