@@ -2,31 +2,34 @@ package scope.symbol
 
 import parser.ast.AstNode
 
-trait CompilerSymbol:
+sealed trait CompilerSymbol:
   def symbolDef: SymbolDefinition
 
   def size: Int = symbolDef.size
 
 object CompilerSymbol:
 
-  case class LocalVariableSymbol(symbolDef: SymbolDefinition, idx: Int) extends CompilerSymbol
+  def unapply(compilerSymbol: CompilerSymbol): Some[(SymbolDefinition, Int)] =
+    Some(compilerSymbol.symbolDef, compilerSymbol.size)
 
-  case class StructMemberSymbol(symbolDef: SymbolDefinition, idx: Int) extends CompilerSymbol
+  final case class LocalVariableSymbol(symbolDef: SymbolDefinition, idx: Int) extends CompilerSymbol
 
-  case class GlobalVariableSymbol(symbolDef: SymbolDefinition, mem: Int) extends CompilerSymbol
+  final case class StructMemberSymbol(symbolDef: SymbolDefinition, idx: Int) extends CompilerSymbol
 
-  case class FunctionParameterSymbol(symbolDef: SymbolDefinition, idx: Int) extends CompilerSymbol
+  final case class GlobalVariableSymbol(symbolDef: SymbolDefinition, mem: Int) extends CompilerSymbol
 
-  case class StructSymbol(symbolDef: SymbolDefinition, members: List[CompilerSymbol]) extends CompilerSymbol:
+  final case class FunctionParameterSymbol(symbolDef: SymbolDefinition, idx: Int) extends CompilerSymbol
+
+  final case class StructSymbol(symbolDef: SymbolDefinition, members: List[StructMemberSymbol]) extends CompilerSymbol:
     override def size: Int = members.map(_.size).sum
 
-  case class FunctionSymbol(symbolDef: SymbolDefinition, params: List[CompilerSymbol], locals: List[CompilerSymbol])
+  final case class FunctionSymbol(symbolDef: SymbolDefinition, params: List[CompilerSymbol], locals: List[CompilerSymbol])
     extends CompilerSymbol:
     override def size: Int = BaseType.TB_VOID_PTR.size
 
   def pprint(symbol: CompilerSymbol, depth: Int = 0): Unit =
     val ident = "\t" * depth
-    println(s"${ident}${symbol.getClass.getSimpleName}:")
+    println(s"$ident${symbol.getClass.getSimpleName}:")
 
     symbol match
       case StructSymbol(symbolDef, members) =>
@@ -61,5 +64,3 @@ object CompilerSymbol:
         SymbolDefinition.pprint(symbolDef, depth + 1)
         println(s"$ident\tidx: $idx")
         println(s"$ident\tsize: ${symbol.size}")
-
-      case _ =>

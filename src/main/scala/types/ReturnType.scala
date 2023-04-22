@@ -8,7 +8,7 @@ sealed trait ReturnType:
 
   def isScalar: Boolean =
     returnedType match
-      case SymbolType(_, Some(s), _) if s >= 0  => false
+      case SymbolType(_, Some(_), _) => false
       case SymbolType(BaseType.TB_VOID, _, _)  => false
       case _ => true
 
@@ -24,9 +24,12 @@ sealed trait ReturnType:
 
       case _ => false
 
+  def canBeConvertedTo(other: ReturnType): Boolean =
+    canBeConvertedTo(other.returnedType)
+
   def coerceTo(other: SymbolType): Option[SymbolType] =
     (this.returnedType, other) match
-      case (SymbolType(_, Some(s1), _), SymbolType(_, Some(s2), _)) if s1 >= 0 && s2 >= 0 => None
+      case (SymbolType(_, Some(_), _), SymbolType(_, Some(_), _)) => None
 
       case (SymbolType(TB_INT, _, _), SymbolType(dstType, _, _)) =>
         dstType match
@@ -42,10 +45,16 @@ sealed trait ReturnType:
 
       case _ => None
 
+  def coerceTo(other: ReturnType): Option[SymbolType] =
+    coerceTo(other.returnedType)
 
 
-final case class LeftValue(returnedType: SymbolType) extends ReturnType
+object ReturnType:
 
-final case class LeftRightValue(returnedType: SymbolType) extends ReturnType
+  def unapply(r: ReturnType): Option[SymbolType] = Some(r.returnedType)
 
-final case class ConstantValue(returnedType: SymbolType) extends ReturnType
+  final case class LeftSideValue(returnedType: SymbolType) extends ReturnType
+
+  final case class AmbidexValue(returnedType: SymbolType) extends ReturnType
+
+  final case class RightSideValue(returnedType: SymbolType) extends ReturnType

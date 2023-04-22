@@ -1,7 +1,9 @@
 package parser.ast
 
-import parser.ast.Definition.variableDef
-import parser.ast.ExpressionNode.expr
+import parser.ast.AstNode.{BodyStatementNode, StatementNode}
+import parser.ast.AstNode.StatementNode.*
+import parser.ast.DefinitionNodeRules.*
+import parser.ast.ExpressionNodeRules.expr
 import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
 import token.Token
@@ -9,24 +11,12 @@ import token.TokenCode.{ELSE, IF, LACC, LPAR, RACC, RETURN, RPAR, SEMICOLON, WHI
 
 import scala.annotation.tailrec
 
-trait Statement extends AstNode
-
-object Statement:
-
-  case class CompoundStmNode(statements: Statement*) extends Statement
-
-  case class IfStmNode(condition: ExpressionNode, thenBranch: Statement, elseBranch: Option[Statement] = None) extends Statement
-
-  case class WhileStmNode(condition: ExpressionNode, body: Statement) extends Statement
-
-  case class ReturnStmNode(expr: Option[ExpressionNode] = None) extends Statement
-
-  case class ExpressionStmNode(expr: Option[ExpressionNode] = None) extends Statement
+object StatementNodeRules:
 
   def compoundStm(tokens: Tokens): ParsingPair[CompoundStmNode] =
     // LACC (varDef | stm)* RACC
     @tailrec
-    def helper(crtTokens: Tokens, definitions: List[Statement]): ParsingPair[List[Statement]] =
+    def helper(crtTokens: Tokens, definitions: List[BodyStatementNode]): ParsingPair[List[BodyStatementNode]] =
       // (varDef | stm)*
       variableDef(crtTokens) match
         case (Some(definition), IsParsed(remainingTokens)) => helper(remainingTokens, definitions :+ definition)
@@ -49,7 +39,7 @@ object Statement:
           case _ => (None, NotParsed(tokens))
       case _ => (None, NotParsed(tokens))
 
-  def statement(tokens: Tokens): ParsingPair[Statement] =
+  def statement(tokens: Tokens): ParsingPair[StatementNode] =
     // stmCompound
     // | IF LPAR expr RPAR stm(ELSE stm) ?
     // | WHILE LPAR expr RPAR stm

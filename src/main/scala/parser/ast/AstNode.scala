@@ -1,117 +1,73 @@
 package parser.ast
 
-import parser.ast.AstRoot.AstRoot
-import parser.ast.Definition.{FunctionDefNode, StructDefNode, VariableDefNode}
-import parser.ast.DefinitionUtils.{ArraySizeNode, FunctionParamNode, TypeBaseNode}
-import parser.ast.ExpressionNode.{BinaryExprNode, CastExprNode, FunctionCallExprNode, LiteralExprNode, UnaryExprNode, VariableExprNode}
-import parser.ast.Statement.{CompoundStmNode, ExpressionStmNode, IfStmNode, ReturnStmNode, WhileStmNode}
-import token.Token.stringify
-import token.TokenCode.{CHAR, INT, STRING}
-import token.TokenWithValue
+import token.{Token, TokenWithValue}
 
 trait AstNode
 
 object AstNode:
 
-  def pprint(ast: AstNode, depth: Int = 0): Unit =
-    val ident = "\t" * depth
-    println(s"$ident${ast.getClass.getSimpleName}:")
-    ast match
-      case AstRoot(definitions*) =>
-        definitions.foreach(d => pprint(d, depth + 1))
+  final case class AstRoot(definitions: DefinitionNode*) extends AstNode
 
-      case TypeBaseNode(baseType, structId) =>
-        val typeBaseStr = stringify(baseType) + structId.map(t => s" ${stringify(t)}").getOrElse("")
-        print(s"$ident$typeBaseStr")
 
-      case ArraySizeNode(arraySize) =>
-        println(arraySize.map(s => s"${ident}arraySize: $s").getOrElse(s"${ident}arraySize: 0"))
+  sealed trait BodyStatementNode extends AstNode
 
-      case VariableDefNode(baseType, id, arraySize) =>
-        print(s"$ident\ttype: ")
-        pprint(baseType)
-        println(s"\n$ident\tid: ${stringify(id)}")
-        arraySize match
-          case Some(size) => pprint(size, depth + 1)
-          case _ => ()
 
-      case StructDefNode(id, varDefinitions*) =>
-        println(s"$ident\tid: ${stringify(id)}")
-        varDefinitions.foreach(d => pprint(d, depth + 1))
+  sealed trait StatementNode extends BodyStatementNode
 
-      case FunctionDefNode(returnType, id, stm, params*) =>
-        print(s"$ident\treturnType: ")
-        pprint(returnType)
-        println(s"\n$ident\tid: ${stringify(id)}")
-        params.foreach(p => pprint(p, depth + 1))
-        pprint(stm, depth + 1)
+  object StatementNode:
 
-      case FunctionParamNode(typeBase, id, arraySize) =>
-        print(s"$ident\ttype: ")
-        pprint(typeBase)
-        println(s"\n$ident\tid: ${stringify(id)}")
-        arraySize match
-          case Some(size) => pprint(size, depth + 1)
-          case _ => ()
+    final case class CompoundStmNode(statements: BodyStatementNode*) extends StatementNode
 
-      case CompoundStmNode(compoundStatements*) =>
-        compoundStatements.foreach(s => pprint(s, depth + 1))
+    final case class IfStmNode(condition: ExpressionNode, thenBranch: StatementNode, elseBranch: Option[StatementNode] = None) extends StatementNode
 
-      case FunctionCallExprNode(funName, expressions*) =>
-        println(s"$ident\tname: ${stringify(funName)}")
-        println(s"$ident\tParams:")
-        expressions.foreach(e => pprint(e, depth + 2))
+    final case class WhileStmNode(condition: ExpressionNode, body: StatementNode) extends StatementNode
 
-      case LiteralExprNode(TokenWithValue(code, _, value)) =>
-        code match
-          case INT => println(s"$ident\tvalue: $value")
-          case STRING => println(s"$ident\tvalue: \"$value\"")
-          case CHAR => println(s"$ident\tvalue: \'$value\'")
-          case _ =>
+    final case class ReturnStmNode(expr: Option[ExpressionNode] = None) extends StatementNode
 
-      case BinaryExprNode(left, op, right) =>
-        pprint(left, depth + 1)
-        println(s"$ident\t${op.tokenCode}")
-        pprint(right, depth + 1)
+    final case class ExpressionStmNode(expr: Option[ExpressionNode] = None) extends StatementNode
 
-      case UnaryExprNode(op, expr) =>
-        println(s"$ident\t${op.tokenCode}")
-        pprint(expr, depth + 1)
 
-      case VariableExprNode(t) =>
-        println(s"$ident\tvalue: ${stringify(t)}")
 
-      case CastExprNode(baseType, arraySize, castedExpr) =>
-        print(s"$ident\tcast to: ")
-        pprint(baseType)
-        arraySize match
-          case Some(size) => pprint(size)
-          case _ => println()
-        pprint(castedExpr, depth + 1)
+  sealed trait DefinitionNode extends BodyStatementNode
 
-      case IfStmNode(cond, thenBranch, elseBranch) =>
-        println(s"$ident\tcond:")
-        pprint(cond, depth + 2)
-        println(s"$ident\tthenBranch:")
-        pprint(thenBranch, depth + 2)
-        elseBranch.foreach(
-          e => {
-            println(s"$ident\telseBranch:")
-            pprint(e, depth + 2)
-          }
-        )
+  object DefinitionNode:
 
-      case WhileStmNode(cond, body) =>
-        println(s"$ident\tcond:")
-        pprint(cond, depth + 2)
-        println(s"$ident\tbody:")
-        pprint(body, depth + 2)
+    final case class StructDefNode (id: Token, variableDefinitions: VariableDefNode*) extends DefinitionNode
 
-      case ReturnStmNode(expr) =>
-        expr.foreach(r => pprint(r, depth + 1))
+    final case class VariableDefNode (typeBase: DefinitionUtils.TypeBaseNode, id: Token, arraySize: Option[DefinitionUtils.ArraySizeNode] = None ) extends DefinitionNode
 
-      case ExpressionStmNode(expr) =>
-        expr.foreach(e => pprint(e, depth + 1))
+    final case class FunctionDefNode (returnType: DefinitionUtils.TypeBaseNode, id: Token, compoundStm: AstNode.StatementNode.CompoundStmNode, functionParams: DefinitionUtils.FunctionParamNode * ) extends DefinitionNode
 
-      case _ =>
-        
+
+
+  sealed trait DefinitionUtils extends AstNode
+
+  object DefinitionUtils:
+
+    final case class TypeBaseNode (baseType: Token, structId: Option[Token] = None) extends DefinitionUtils
+
+    final case class ArraySizeNode (size: Option[Int] = None) extends DefinitionUtils
+
+    final case class FunctionParamNode (typeBase: TypeBaseNode, id: Token, arraySize: Option[ArraySizeNode] = None) extends DefinitionUtils
+
+
+
+  sealed trait ExpressionNode extends AstNode
+
+  object ExpressionNode:
+
+    final case class BinaryExprNode (left: ExpressionNode, operator: Token, right: ExpressionNode) extends ExpressionNode
+
+    final case class UnaryExprNode (operator: Token, right: ExpressionNode) extends ExpressionNode
+
+    final case class FunctionCallExprNode (funName: Token, expressions: ExpressionNode *) extends ExpressionNode
+
+    final case class LiteralExprNode[T] (literal: TokenWithValue[T]) extends ExpressionNode
+
+    final case class VariableExprNode[T] (variable: TokenWithValue[T]) extends  ExpressionNode
+
+    final case class FieldAccessExprNode[T] (left: ExpressionNode, field: TokenWithValue[T]) extends ExpressionNode
+
+    final case class ArrayAccessExprNode (arrayExpression: ExpressionNode, idxExpression: ExpressionNode) extends ExpressionNode
+
+    final case class CastExprNode (typeBase: DefinitionUtils.TypeBaseNode, arraySize: Option[DefinitionUtils.ArraySizeNode] = None, castedExpr: ExpressionNode) extends ExpressionNode

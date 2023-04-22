@@ -1,6 +1,7 @@
 package parser.ast
 
-import parser.ast.Definition.{functionDef, structDef, variableDef}
+import parser.ast.AstNode.{AstRoot, DefinitionNode}
+import parser.ast.DefinitionNodeRules.*
 import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
 import token.Token
@@ -8,16 +9,12 @@ import token.TokenCode.{END, ID}
 
 import scala.annotation.tailrec
 
-trait AstRoot extends AstNode
 
-object AstRoot:
-
-  case class AstRoot(definitions: Definition*) extends AstNode
-
+object AstRootRules:
   def astRoot(tokens: Tokens): ParsingPair[AstRoot] =
     // (structDef | fnDef | varDef)* END
     @tailrec
-    def helper(crtTokens: Tokens, definitions: List[Definition]): List[Definition] =
+    def helper(crtTokens: Tokens, definitions: List[DefinitionNode]): List[DefinitionNode] =
       functionDef(crtTokens) match
         case (Some(varDefinition), IsParsed(remainingTokens)) => helper(remainingTokens, definitions :+ varDefinition)
         case _ =>

@@ -1,7 +1,7 @@
 package scope.symbol
 
 import parser.ast.AstNode
-import parser.ast.DefinitionUtils.{ArraySizeNode, TypeBaseNode}
+import parser.ast.AstNode.DefinitionUtils.{ArraySizeNode, TypeBaseNode}
 import scope.domain.DomainManager
 import scope.symbol.CompilerSymbol.StructSymbol
 import scope.symbol.BaseType
@@ -12,7 +12,7 @@ case class SymbolType
 (
   baseType: BaseType,
   arraySize: Option[Int] = None,
-  structSymbol: Option[CompilerSymbol] = None
+  structSymbol: Option[StructSymbol] = None
 ):
   def size: Int =
     arraySize match
@@ -28,7 +28,7 @@ case object SymbolType:
    * @param structSymbol optional symbol with struct type
    * @return SymbolType
    */
-  def apply(typeBase: TypeBaseNode, arraySize: Option[ArraySizeNode], structSymbol: Option[CompilerSymbol]): SymbolType =
+  def apply(typeBase: TypeBaseNode, arraySize: Option[ArraySizeNode], structSymbol: Option[StructSymbol]): SymbolType =
     val baseType =
       typeBase match
         case TypeBaseNode(Token(STRUCT, _), _) => BaseType.TB_STRUCT

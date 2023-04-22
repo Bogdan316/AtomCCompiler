@@ -1,31 +1,12 @@
 package parser.ast
 
+import parser.ast.AstNode.DefinitionUtils.*
 import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
 import token.TokenCode.{ID, INT, LBRACKET, RBRACKET, STRUCT, TYPE_CHAR, TYPE_DOUBLE, TYPE_INT}
 import token.{Token, TokenWithValue}
 
-trait DefinitionUtils extends AstNode
-
-object DefinitionUtils:
-
-  case class TypeBaseNode
-  (
-    baseType: Token,
-    structId: Option[Token] = None
-  ) extends DefinitionUtils
-
-  case class ArraySizeNode
-  (
-    size: Option[Int] = None
-  ) extends DefinitionUtils
-
-  case class FunctionParamNode
-  (
-    typeBase: TypeBaseNode,
-    id: Token,
-    arraySize: Option[ArraySizeNode] = None
-  ) extends DefinitionUtils
+object DefinitionUtilsRules:
 
   def typeBase(tokens: Tokens): ParsingPair[TypeBaseNode] =
     // TYPE_INT | TYPE_DOUBLE | TYPE_CHAR | STRUCT ID

@@ -1,6 +1,8 @@
 package parser.ast
 
-import parser.ast.DefinitionUtils.{arraySize, typeBase}
+import parser.ast.AstNode.ExpressionNode
+import parser.ast.AstNode.ExpressionNode.*
+import parser.ast.DefinitionUtilsRules.{arraySize, typeBase}
 import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
 import token.TokenCode.*
@@ -8,45 +10,7 @@ import token.{Token, TokenWithValue}
 
 import scala.annotation.tailrec
 
-sealed trait ExpressionNode extends AstNode
-
-object ExpressionNode:
-
-  final case class BinaryExprNode
-  (
-    left: ExpressionNode,
-    operator: Token,
-    right: ExpressionNode
-  ) extends ExpressionNode
-
-  final case class UnaryExprNode
-  (
-    operator: Token,
-    right: ExpressionNode
-  ) extends ExpressionNode
-
-  final case class FunctionCallExprNode
-  (
-    funName: Token,
-    expressions: ExpressionNode *
-  ) extends ExpressionNode
-
-  final case class LiteralExprNode[T]
-  (
-    literal: TokenWithValue[T]
-  ) extends ExpressionNode
-
-  final case class VariableExprNode[T]
-  (
-    variable: TokenWithValue[T]
-  ) extends  ExpressionNode
-
-  final case class CastExprNode
-  (
-    typeBase: DefinitionUtils.TypeBaseNode,
-    arraySize: Option[DefinitionUtils.ArraySizeNode] = None,
-    castedExpr: ExpressionNode
-  ) extends ExpressionNode
+object ExpressionNodeRules:
 
   def expr(tokens: Tokens): ParsingPair[ExpressionNode] =
     exprAssign(tokens)
@@ -243,10 +207,10 @@ object ExpressionNode:
   private def exprPostfixPrime(tokens: Tokens, prevExpr: ExpressionNode, contextTokens: Tokens): ParsingPair[ExpressionNode] =
     // LBRACKET expr RBRACKET exprPostfixPrime | DOT ID exprPostfixPrime | eps
     tokens match
-      case token.Token(LBRACKET, _) :: tail =>
+      case Token(LBRACKET, _) :: tail =>
         expr(tail) match
-          case (Some(exp), IsParsed((op@Token(RBRACKET, _)) :: tail)) =>
-            exprPostfixPrime(tail, BinaryExprNode(prevExpr, op, exp), contextTokens)
+          case (Some(exp), IsParsed(Token(RBRACKET, _) :: tail)) =>
+            exprPostfixPrime(tail, ArrayAccessExprNode(prevExpr, exp), contextTokens)
 
           // should have the matching ]
           case (Some(_), IsParsed(t :: _)) => throw SyntaxError(RBRACKET, t, contextTokens)
@@ -256,8 +220,8 @@ object ExpressionNode:
 
           case _ => (None, NotParsed(tokens))
 
-      case (op@Token(DOT, _)) :: (id@TokenWithValue(ID, _, _)) :: tail =>
-        exprPostfixPrime(tail, BinaryExprNode(prevExpr, op, VariableExprNode(id)), contextTokens)
+      case Token(DOT, _) :: (id@TokenWithValue(ID, _, _)) :: tail =>
+        exprPostfixPrime(tail, FieldAccessExprNode(prevExpr, id), contextTokens)
 
       // should have id after .
       case Token(DOT, _) :: t :: _ => throw SyntaxError(ID, t, contextTokens)

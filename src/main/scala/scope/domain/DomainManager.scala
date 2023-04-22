@@ -53,7 +53,7 @@ case class DomainManager(domains: List[Domain] = List()):
   def :+(symbol: CompilerSymbol): DomainManager =
     domains.headOption
       .map(d => DomainManager((d :+ symbol) :: domains.tail))
-      .getOrElse(DomainManager(Domain("GLOBAL", List(symbol)) :: Nil))
+      .getOrElse(DomainManager(Domain("global", List(symbol)) :: Nil))
 
 case object DomainManager:
 

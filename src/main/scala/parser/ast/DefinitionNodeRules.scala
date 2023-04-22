@@ -1,6 +1,10 @@
 package parser.ast
 
-import parser.ast.Statement.{CompoundStmNode, compoundStm}
+
+import parser.ast.AstNode.DefinitionNode.*
+import parser.ast.AstNode.DefinitionUtils.*
+import parser.ast.DefinitionUtilsRules.*
+import parser.ast.StatementNodeRules.compoundStm
 import parser.exceptions.SyntaxError
 import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
 import token.Token
@@ -8,37 +12,14 @@ import token.TokenCode.*
 
 import scala.annotation.tailrec
 
-trait Definition extends Statement
-
-object Definition:
-
-  case class StructDefNode
-  (
-    id: Token,
-    variableDefinitions: VariableDefNode*
-  ) extends Definition
-
-  case class VariableDefNode
-  (
-    typeBase: DefinitionUtils.TypeBaseNode,
-    id: Token,
-    arraySize: Option[DefinitionUtils.ArraySizeNode] = None
-  ) extends Definition
-
-  case class FunctionDefNode
-  (
-    returnType: DefinitionUtils.TypeBaseNode,
-    id: Token,
-    compoundStm: CompoundStmNode,
-    functionParams: DefinitionUtils.FunctionParamNode *
-  ) extends Definition
+object DefinitionNodeRules:
 
   def variableDef(tokens: Tokens): ParsingPair[VariableDefNode] =
     // typeBase ID arrayDecl? SEMICOLON
-    DefinitionUtils.typeBase(tokens) match
+    typeBase(tokens) match
       case (Some(varType), IsParsed((varId@Token(ID, _)) :: remainingTokens)) =>
 
-        DefinitionUtils.arraySize(remainingTokens, tokens) match
+        arraySize(remainingTokens, tokens) match
           case (arraySize, remainingTokens) =>
             remainingTokens.get match
               case Token(SEMICOLON, _) :: tail =>
@@ -86,14 +67,14 @@ object Definition:
 
       case _ => (None, NotParsed(tokens))
 
-  private def functionParams(tokens: Tokens, contextTokens: Tokens): ParsingPair[List[DefinitionUtils.FunctionParamNode]] =
+  private def functionParams(tokens: Tokens, contextTokens: Tokens): ParsingPair[List[FunctionParamNode]] =
     // (fnParam (COMMA fnParam)*)?
     @tailrec
-    def functionParamsHelper(crtTokens: Tokens, params: List[DefinitionUtils.FunctionParamNode]): ParsingPair[List[DefinitionUtils.FunctionParamNode]] =
+    def functionParamsHelper(crtTokens: Tokens, params: List[FunctionParamNode]): ParsingPair[List[FunctionParamNode]] =
       // (COMMA fnParam)*
       crtTokens match
         case Token(COMMA, _) :: remainingTokens =>
-          DefinitionUtils.functionParam(remainingTokens, contextTokens) match
+          functionParam(remainingTokens, contextTokens) match
             case (Some(param), IsParsed(remainingTokens)) => functionParamsHelper(remainingTokens, params :+ param)
             case _ => (Some(List()), IsParsed(crtTokens))
 
@@ -103,7 +84,7 @@ object Definition:
         case _ => (Some(params), IsParsed(crtTokens))
 
 
-    DefinitionUtils.functionParam(tokens, contextTokens) match
+    functionParam(tokens, contextTokens) match
       case (Some(param), IsParsed(remainingTokens)) =>
         functionParamsHelper(remainingTokens, List()) match
           case (Some(params), remainingTokens@IsParsed(_)) => (Option(param +: params), remainingTokens)
@@ -115,13 +96,13 @@ object Definition:
     val (returnType, functionName, remainingTokens) =
       tokens match
         case (retType@Token(VOID, _)) :: (fnName@Token(ID, _)) :: remainingTokens =>
-          (Some(DefinitionUtils.TypeBaseNode(retType)), Some(fnName), IsParsed(remainingTokens))
+          (Some(TypeBaseNode(retType)), Some(fnName), IsParsed(remainingTokens))
 
         // should have name after type
         case Token(VOID, _) :: t :: _ => throw SyntaxError(ID, t, tokens)
 
         case _ =>
-          DefinitionUtils.typeBase(tokens) match
+          typeBase(tokens) match
             case (Some(baseType), IsParsed((fnName@Token(ID, _)) :: remainingTokens)) =>
               (Some(baseType), Some(fnName), IsParsed(remainingTokens))
 
