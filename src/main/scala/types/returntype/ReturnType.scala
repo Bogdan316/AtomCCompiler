@@ -1,7 +1,7 @@
-package types
+package types.returntype
 
-import scope.symbol.{BaseType, SymbolType}
 import scope.symbol.BaseType.*
+import scope.symbol.{BaseType, SymbolType}
 
 sealed trait ReturnType:
   def returnedType: SymbolType

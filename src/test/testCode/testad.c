@@ -25,8 +25,6 @@ double sum(double x[5],int n){
 	return r;
 	}
 
-// TODO: fix recursive calls
-
 void f(struct S1 p){
-	sum(p.i);
+	puti(p.i);
 	}

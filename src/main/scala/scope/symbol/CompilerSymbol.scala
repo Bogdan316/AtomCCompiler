@@ -23,8 +23,8 @@ object CompilerSymbol:
   final case class StructSymbol(symbolDef: SymbolDefinition, members: List[StructMemberSymbol]) extends CompilerSymbol:
     override def size: Int = members.map(_.size).sum
 
-  final case class FunctionSymbol(symbolDef: SymbolDefinition, params: List[CompilerSymbol], locals: List[CompilerSymbol])
-    extends CompilerSymbol:
+  final case class FunctionSymbol(symbolDef: SymbolDefinition, params: List[CompilerSymbol], 
+                                  locals: List[CompilerSymbol]) extends CompilerSymbol:
     override def size: Int = BaseType.TB_VOID_PTR.size
 
   def pprint(symbol: CompilerSymbol, depth: Int = 0): Unit =

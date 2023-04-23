@@ -1,7 +1,10 @@
 package scope.domain
 
+import parser.ast.AstNode.DefinitionUtils.TypeBaseNode
 import scope.symbol.CompilerSymbol
-import scope.symbol.CompilerSymbol.{FunctionParameterSymbol, LocalVariableSymbol}
+import scope.symbol.CompilerSymbol.{FunctionParameterSymbol, LocalVariableSymbol, StructSymbol}
+import token.Token.IdentifierToken
+import token.Token.TypeToken.StructTypeToken
 
 import scala.annotation.targetName
 
@@ -54,6 +57,22 @@ case class DomainManager(domains: List[Domain] = List()):
     domains.headOption
       .map(d => DomainManager((d :+ symbol) :: domains.tail))
       .getOrElse(DomainManager(Domain("global", List(symbol)) :: Nil))
+
+  def getStructSymbol(typeBase: TypeBaseNode): Option[StructSymbol] =
+    typeBase match
+      case TypeBaseNode(StructTypeToken(_), Some(IdentifierToken(_, structName))) =>
+        this.findInAnyDomain(structName) match
+          case Some(struct: StructSymbol) => Option(struct)
+          case _ => None
+      case _ => None
+
+  def checkStructIsDefined(typeBaseNode: TypeBaseNode): Unit =
+    typeBaseNode match
+      case TypeBaseNode(StructTypeToken(_), Some(IdentifierToken(line, structName))) =>
+        if !this.existsInAnyDomain(structName) then
+          throw RuntimeException(s"Undefined 'struct $structName' type at line $line.")
+        else ()
+      case _ =>
 
 case object DomainManager:
 

@@ -6,7 +6,8 @@ import parser.ast.AstNode.DefinitionUtils.*
 import parser.ast.DefinitionUtilsRules.*
 import parser.ast.StatementNodeRules.compoundStm
 import parser.exceptions.SyntaxError
-import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
+import parser.parsed.Parsed.*
+import parser.parsed.{ParsingPair, Tokens}
 import token.Token.DelimiterToken.*
 import token.Token.KeywordToken.*
 import token.Token.LiteralToken.*
@@ -31,7 +32,7 @@ object DefinitionNodeRules:
                 (Some(VariableDefNode(varType, varId, arraySize)), IsParsed(tail))
 
               // should have ; at the end of definition
-              case (t: LbracketToken) :: _ => throw SyntaxError(";", t, tokens)
+              case t :: _ if !t.isInstanceOf[LbracketToken] => throw SyntaxError(";", t, tokens)
 
               case _ => (None, NotParsed(tokens))
 

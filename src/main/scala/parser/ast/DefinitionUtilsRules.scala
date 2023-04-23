@@ -5,7 +5,8 @@ import parser.ast.AstNode.DefinitionUtils.*
 import parser.ast.DefinitionUtilsRules.*
 import parser.ast.StatementNodeRules.compoundStm
 import parser.exceptions.SyntaxError
-import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
+import parser.parsed.{ParsingPair, Tokens}
+import parser.parsed.Parsed.*
 import token.Token.DelimiterToken.*
 import token.Token.KeywordToken.*
 import token.Token.LiteralToken.*
@@ -35,7 +36,7 @@ object DefinitionUtilsRules:
     tokens match
       case LbracketToken(_) :: RbracketToken(_) :: tail => (Option(ArraySizeNode(Option(0))), IsParsed(tail))
 
-      case LbracketToken(_) :: IntLiteralToken(value, _) :: RbracketToken(_) :: tail =>
+      case LbracketToken(_) :: IntLiteralToken(_, value) :: RbracketToken(_) :: tail =>
         (Option(ArraySizeNode(Option(value))), IsParsed(tail))
 
       // should have integer between []

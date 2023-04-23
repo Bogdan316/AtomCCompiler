@@ -3,7 +3,8 @@ package parser.ast
 import parser.ast.AstNode.{AstRoot, DefinitionNode}
 import parser.ast.DefinitionNodeRules.*
 import parser.exceptions.SyntaxError
-import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
+import parser.parsed.{ParsingPair, Tokens}
+import parser.parsed.Parsed.*
 import token.Token
 import token.Token.DelimiterToken.EndToken
 

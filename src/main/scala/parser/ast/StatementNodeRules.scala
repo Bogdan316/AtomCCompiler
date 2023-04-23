@@ -5,13 +5,13 @@ import parser.ast.AstNode.{BodyStatementNode, StatementNode}
 import parser.ast.DefinitionNodeRules.*
 import parser.ast.ExpressionNodeRules.expr
 import parser.exceptions.SyntaxError
-import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
+import parser.parsed.Parsed.*
+import parser.parsed.{ParsingPair, Tokens}
 import token.Token
 import token.Token.DelimiterToken.*
+import token.Token.IdentifierToken
 import token.Token.KeywordToken.{ElseToken, IfToken, ReturnToken, WhileToken}
-import token.Token.LiteralToken.{CharLiteralToken, DoubleLiteralToken, IntLiteralToken, StringLiteralToken}
 import token.Token.OperatorToken.*
-import token.Token.{IdentifierToken, LiteralToken}
 
 import scala.annotation.tailrec
 

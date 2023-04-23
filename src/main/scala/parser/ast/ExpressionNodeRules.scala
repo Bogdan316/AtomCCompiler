@@ -6,9 +6,10 @@ import parser.ast.AstNode.ExpressionNode
 import parser.ast.AstNode.ExpressionNode.*
 import parser.ast.DefinitionUtilsRules.*
 import parser.exceptions.SyntaxError
-import parser.parsed.{IsParsed, NotParsed, ParsingPair, Tokens}
+import parser.parsed.{ParsingPair, Tokens}
+import parser.parsed.Parsed.*
 import token.Token.DelimiterToken.*
-import token.Token.LiteralToken.{CharLiteralToken, DoubleLiteralToken, IntLiteralToken, StringLiteralToken}
+import token.Token.LiteralToken
 import token.Token.OperatorToken.*
 import token.Token.{IdentifierToken, LiteralToken}
 import token.Token
@@ -37,7 +38,7 @@ object ExpressionNodeRules:
   def exprOr(tokens: Tokens, contextTokens: Tokens): ParsingPair[ExpressionNode] =
   // exprAnd exprOrPrime
     exprAnd(tokens, contextTokens) match
-      case (Some(and), IsParsed(remainingTokens)) => exprOrPrime(remainingTokens, and, tokens)
+      case (Some(and), IsParsed(remainingTokens)) => exprOrPrime(remainingTokens, and, contextTokens)
       case _ => (None, NotParsed(tokens))
 
   @tailrec
@@ -59,7 +60,7 @@ object ExpressionNodeRules:
   def exprAnd(tokens: Tokens, contextTokens: Tokens): ParsingPair[ExpressionNode] =
   // exprEq exprAndPrime
     exprEq(tokens, contextTokens) match
-      case (Some(eqToken), IsParsed(remainingTokens)) => exprAndPrime(remainingTokens, eqToken, tokens)
+      case (Some(eqToken), IsParsed(remainingTokens)) => exprAndPrime(remainingTokens, eqToken, contextTokens)
       case _ => (None, NotParsed(tokens))
 
   @tailrec
@@ -81,7 +82,7 @@ object ExpressionNodeRules:
   def exprEq(tokens: Tokens, contextTokens: Tokens): ParsingPair[ExpressionNode] =
   // exprRel exprEqPrime
     exprRel(tokens, contextTokens) match
-      case (Some(rel), IsParsed(remainingTokens)) => exprEqPrime(remainingTokens, rel, tokens)
+      case (Some(rel), IsParsed(remainingTokens)) => exprEqPrime(remainingTokens, rel, contextTokens)
       case _ => (None, NotParsed(tokens))
 
   @tailrec
@@ -103,7 +104,7 @@ object ExpressionNodeRules:
   def exprRel(tokens: Tokens, contextTokens: Tokens): ParsingPair[ExpressionNode] =
   // exprAdd exprRelPrime
     exprAdd(tokens, contextTokens) match
-      case (Some(add), IsParsed(remainingTokens)) => exprRelPrime(remainingTokens, add, tokens)
+      case (Some(add), IsParsed(remainingTokens)) => exprRelPrime(remainingTokens, add, contextTokens)
       case _ => (None, NotParsed(tokens))
 
   @tailrec
@@ -125,7 +126,7 @@ object ExpressionNodeRules:
   def exprAdd(tokens: Tokens, contextTokens: Tokens): ParsingPair[ExpressionNode] =
   // exprMul exprAddPrime
     exprMul(tokens, contextTokens) match
-      case (Some(mul), IsParsed(remainingTokens)) => exprAddPrime(remainingTokens, mul, tokens)
+      case (Some(mul), IsParsed(remainingTokens)) => exprAddPrime(remainingTokens, mul, contextTokens)
       case _ => (None, NotParsed(tokens))
 
   @tailrec
@@ -147,7 +148,7 @@ object ExpressionNodeRules:
   def exprMul(tokens: Tokens, contextTokens: Tokens): ParsingPair[ExpressionNode] =
   // exprCast exprMulPrime
     exprCast(tokens, contextTokens) match
-      case (Some(cast), IsParsed(remainingTokens)) => exprMulPrime(remainingTokens, cast, tokens)
+      case (Some(cast), IsParsed(remainingTokens)) => exprMulPrime(remainingTokens, cast, contextTokens)
       case _ => (None, NotParsed(tokens))
 
   @tailrec
@@ -205,7 +206,7 @@ object ExpressionNodeRules:
   // exprPrimary exprPostfixPrime
     exprPrimary(tokens, contextTokens) match
       case (Some(exp), IsParsed(remainingTokens)) =>
-        exprPostfixPrime(remainingTokens, exp, tokens)
+        exprPostfixPrime(remainingTokens, exp, contextTokens)
       case _ => (None, NotParsed(tokens))
 
   @tailrec
